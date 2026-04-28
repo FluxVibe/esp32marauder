@@ -46,6 +46,9 @@ https://www.online-utility.org/image/convert/to/XBM
 #ifdef HAS_SCREEN
   #include "Display.h"
   #include "MenuFunctions.h"
+  #ifdef HYBRID_UI
+    #include "components/UI/UIManager.h"
+  #endif
 #endif
 
 #ifdef HAS_BUTTONS
@@ -86,6 +89,9 @@ CommandLine cli_obj;
 #ifdef HAS_SCREEN
   Display display_obj;
   MenuFunctions menu_function_obj;
+  #ifdef HYBRID_UI
+    UIManager ui_manager_obj(display_obj.tft);
+  #endif
 #endif
 
 #if defined(HAS_SD) && !defined(HAS_C5_SD)
@@ -313,6 +319,9 @@ void setup()
   #ifdef HAS_SCREEN
     display_obj.RunSetup();
     display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    #ifdef HYBRID_UI
+      ui_manager_obj.init();
+    #endif
   #endif
 
   // Init PWM brightness AFTER display init (so ledcAttach overrides TFT_eSPI's pinMode)
@@ -468,7 +477,24 @@ void loop()
   if ((wifi_scan_obj.currentScanMode != WIFI_PACKET_MONITOR) ||
       (mini)) {
     #ifdef HAS_SCREEN
-      menu_function_obj.main(currentTime);
+      #ifdef HYBRID_UI
+        // --- Hybrid UI: button routing + render ---
+        #ifdef HAS_BUTTONS
+          #if (C_BTN >= 0)
+            if (c_btn.justPressed()) ui_manager_obj.handleCenter();
+          #endif
+          #if (D_BTN >= 0)
+            if (d_btn.isHeld())       ui_manager_obj.handleBack();
+            else if (d_btn.justPressed()) ui_manager_obj.handleDown();
+          #endif
+          #if (U_BTN >= 0)
+            if (u_btn.justPressed()) ui_manager_obj.handleUp();
+          #endif
+        #endif
+        ui_manager_obj.update();
+      #else
+        menu_function_obj.main(currentTime);
+      #endif
     #endif
   }
   #ifdef HAS_FLIPPER_LED

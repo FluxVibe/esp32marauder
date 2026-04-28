@@ -900,6 +900,9 @@
     
       #define STATUSBAR_COLOR 0x4A49
 
+      // Hybrid UI: carousel menu (landscape) + CLI screen (portrait)
+      #define HYBRID_UI
+
     #endif
 
   #if defined(MARAUDER_M5STICKCP2)
@@ -975,6 +978,9 @@
       #define GREENBUTTON_H FRAME_H
 
       #define STATUSBAR_COLOR 0x4A49
+
+      // Hybrid UI: carousel menu (landscape) + CLI screen (portrait)
+      #define HYBRID_UI
 
     #endif
 
