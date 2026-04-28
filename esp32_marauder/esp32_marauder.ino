@@ -321,6 +321,10 @@ void setup()
     display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
     #ifdef HYBRID_UI
       ui_manager_obj.init();
+      // Boot-time PIN gate (runs before splash screen finishes)
+      if (settings_obj.loadSetting<bool>("PINEnabled")) {
+        ui_manager_obj.lockScreen();
+      }
     #endif
   #endif
 

@@ -37,7 +37,7 @@
   //#define DUAL_MINI_C5
   //// END BOARD TARGETS
 
-  #define JSON_SETTING_SIZE 2048
+  #define JSON_SETTING_SIZE 3072
 
   #define MARAUDER_VERSION "v1.12.0"
 

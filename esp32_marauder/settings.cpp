@@ -31,6 +31,12 @@ void Settings::_buildCache() {
       _cache.ClientSSID = json["Settings"][i]["value"].as<String>();
     else if (name == "ClientPW")
       _cache.ClientPW = json["Settings"][i]["value"].as<String>();
+    else if (name == "PINEnabled")
+      _cache.PINEnabled = json["Settings"][i]["value"].as<bool>();
+    else if (name == "PINCode")
+      _cache.PINCode = json["Settings"][i]["value"].as<String>();
+    else if (name == "UILandscape")
+      _cache.UILandscape = json["Settings"][i]["value"].as<bool>();
   }
 }
 
@@ -104,6 +110,8 @@ template <> String Settings::loadSetting<String>(String key) {
     return _cache.ClientSSID;
   if (key == "ClientPW")
     return _cache.ClientPW;
+  if (key == "PINCode")
+    return _cache.PINCode;
 
   // Unknown String key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -135,6 +143,10 @@ template <> bool Settings::loadSetting<bool>(String key) {
     return _cache.EPDeauth;
   if (key == "ChanHop")
     return _cache.ChanHop;
+  if (key == "PINEnabled")
+    return _cache.PINEnabled;
+  if (key == "UILandscape")
+    return _cache.UILandscape;
 
   // Unknown bool key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -220,6 +232,10 @@ template <> bool Settings::saveSetting<bool>(String key, bool value) {
         _cache.EPDeauth = value;
       else if (key == "ChanHop")
         _cache.ChanHop = value;
+      else if (key == "PINEnabled")
+        _cache.PINEnabled = value;
+      else if (key == "UILandscape")
+        _cache.UILandscape = value;
 
       this->printJsonSettings(settings_string);
 
@@ -261,6 +277,8 @@ template <> bool Settings::saveSetting<bool>(String key, String value) {
         _cache.ClientSSID = value;
       else if (key == "ClientPW")
         _cache.ClientPW = value;
+      else if (key == "PINCode")
+        _cache.PINCode = value;
 
       this->printJsonSettings(settings_string);
 
@@ -397,6 +415,24 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][7]["value"] = "";
     jsonBuffer["Settings"][7]["range"]["min"] = "";
     jsonBuffer["Settings"][7]["range"]["max"] = "";
+
+    jsonBuffer["Settings"][8]["name"]  = "PINEnabled";
+    jsonBuffer["Settings"][8]["type"]  = "bool";
+    jsonBuffer["Settings"][8]["value"] = false;
+    jsonBuffer["Settings"][8]["range"]["min"] = false;
+    jsonBuffer["Settings"][8]["range"]["max"] = true;
+
+    jsonBuffer["Settings"][9]["name"]  = "PINCode";
+    jsonBuffer["Settings"][9]["type"]  = "String";
+    jsonBuffer["Settings"][9]["value"] = "";
+    jsonBuffer["Settings"][9]["range"]["min"] = "";
+    jsonBuffer["Settings"][9]["range"]["max"] = "";
+
+    jsonBuffer["Settings"][10]["name"]  = "UILandscape";
+    jsonBuffer["Settings"][10]["type"]  = "bool";
+    jsonBuffer["Settings"][10]["value"] = true;
+    jsonBuffer["Settings"][10]["range"]["min"] = false;
+    jsonBuffer["Settings"][10]["range"]["max"] = true;
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {

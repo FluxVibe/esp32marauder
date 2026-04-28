@@ -33,6 +33,10 @@ class Settings {
       bool  ChanHop     = false;
       String ClientSSID = "";
       String ClientPW   = "";
+      // Hybrid UI settings
+      bool   PINEnabled  = false;
+      String PINCode     = "";
+      bool   UILandscape = true;
     } _cache;
 
     void _buildCache();  // parse json_settings_string -> _cache

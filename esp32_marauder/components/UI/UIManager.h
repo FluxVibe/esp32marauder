@@ -2,10 +2,17 @@
 
 #include <TFT_eSPI.h>
 #include "CarouselMenu.h"
-#include "CLIScreen.h"
+
+// Forward declarations — full headers included in UIManager.cpp
+class CLIScreen;
+class WiFiScanScreen;
+class BLEScanScreen;
+class DeauthScanScreen;
+class PINScreen;
+class SettingsScreen;
 
 enum UIMode {
-    UI_CAROUSEL,  // landscape, retro menu
+    UI_CAROUSEL,  // landscape or portrait, retro menu
     UI_CLI        // portrait, CLI execution screen
 };
 
@@ -15,18 +22,15 @@ enum UIMode {
 //   1. Call init() after display setup.
 //   2. Call update() every loop iteration.
 //   3. Route button presses to handleUp/Down/Center/Back.
-//
-// showMenu()  → switches to landscape carousel
-// showScreen() → switches to portrait CLI screen
 class UIManager {
 public:
     explicit UIManager(TFT_eSPI& tft);
     ~UIManager();
 
-    void init();    // builds menu cards, sets rotation, first draw
-    void update();  // redraws when dirty or animating
+    void init();
+    void update();
 
-    // Button handlers (call from loop)
+    // Button handlers — call from loop()
     void handleUp();
     void handleDown();
     void handleCenter();
@@ -36,23 +40,40 @@ public:
     void showMenu();
     void showScreen(CLIScreen* screen);
 
+    // Orientation (reads UILandscape from settings, applies rotation + carousel mode)
+    void applyOrientation();
+
+    // Lock / PIN
+    void lockScreen();
+    void requestPIN(void (*onSuccess)(), void (*onFail)() = nullptr);
+    void startPINSetup();   // called by SettingsScreen
+    bool isLocked() const { return _locked; }
+
     void markDirty() { _dirty = true; }
     UIMode mode() const { return _mode; }
 
-    // Accessors for pre-allocated screens (used by action stubs in UIManager.cpp)
-    WiFiScanScreen* wifiScreen();
-    BLEScanScreen*  bleScreen();
+    // Screen accessors
+    WiFiScanScreen*   wifiScreen();
+    BLEScanScreen*    bleScreen();
+    DeauthScanScreen* deauthScreen();
+    SettingsScreen*   settingsScreen();
+    PINScreen*        pinScreen();
 
 private:
-    TFT_eSPI&    _tft;
-    UIMode       _mode;
-    CarouselMenu* _menu;
-    CLIScreen*   _screen;   // currently active CLI screen (not owned)
-    bool         _dirty;
+    TFT_eSPI&      _tft;
+    UIMode         _mode;
+    CarouselMenu*  _menu;
+    CLIScreen*     _screen;   // currently active CLI screen (not owned)
+    bool           _dirty;
+    bool           _locked;
+    bool           _portrait; // cached orientation state
 
-    // Pre-allocated CLI screens (owned by UIManager)
-    WiFiScanScreen* _wifiScreen;
-    BLEScanScreen*  _bleScreen;
+    // Owned screens
+    WiFiScanScreen*   _wifiScreen;
+    BLEScanScreen*    _bleScreen;
+    DeauthScanScreen* _deauthScreen;
+    SettingsScreen*   _settingsScreen;
+    PINScreen*        _pinScreen;
 
     void setRotation(int r);
 };

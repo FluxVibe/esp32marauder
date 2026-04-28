@@ -91,3 +91,23 @@ private:
     bool     _scanning;
     unsigned long _startMs;
 };
+
+// ----------------------------------------------------------------
+// Deauth sniffer screen — PIN-gated (attack function)
+// ----------------------------------------------------------------
+class DeauthScanScreen : public CLIScreen {
+public:
+    DeauthScanScreen(TFT_eSPI& tft);
+
+    void draw()     override;
+    void update()   override;
+    void onAction() override;  // PIN-gated start/stop
+    void onBack()   override;
+
+    void doStart();  // called after PIN is verified
+
+private:
+    bool          _scanning;
+    int           _packetCount;
+    unsigned long _startMs;
+};

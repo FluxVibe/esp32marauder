@@ -1,10 +1,13 @@
 #include "CLIScreen.h"
+#include "UIManager.h"
 #include "../../WiFiScan.h"
+#include "../../settings.h"
 #include <stdio.h>
 #include <string.h>
 
-// Forward declarations for globals defined in esp32_marauder.ino
-extern WiFiScan wifi_scan_obj;
+extern WiFiScan  wifi_scan_obj;
+extern Settings  settings_obj;
+extern UIManager ui_manager_obj;
 
 // ================================================================
 //  CLIScreen base
@@ -216,6 +219,106 @@ void BLEScanScreen::onAction() {
 }
 
 void BLEScanScreen::onBack() {
+    if (_scanning) {
+        wifi_scan_obj.StartScan(WIFI_SCAN_OFF);
+        _scanning = false;
+    }
+}
+
+// ================================================================
+//  DeauthScanScreen  — PIN-gated attack screen
+// ================================================================
+
+DeauthScanScreen::DeauthScanScreen(TFT_eSPI& tft)
+    : CLIScreen(tft, "Deauth Snif"),
+      _scanning(false), _packetCount(0), _startMs(0)
+{}
+
+void DeauthScanScreen::draw() {
+    _tft.fillScreen(CREAM_BG);
+    drawHeader(_scanning ? "Stop" : "Start");
+
+    int y = CLI_BODY_START + 4;
+
+    _tft.setTextFont(FONT_CLI_BODY);
+    _tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
+    _tft.setCursor(4, y);
+    _tft.print("solinlab@marauder");
+    y += 14;
+
+    _tft.setTextColor(DARK_TEXT, CREAM_BG);
+    _tft.setCursor(4, y);
+    if (_scanning) {
+        _tft.print("Sniffing deauth...");
+    } else {
+        _tft.setTextColor(WARNING_ORANGE, CREAM_BG);
+        _tft.print("! Attack function");
+        y += 12;
+        _tft.setTextColor(DARK_TEXT, CREAM_BG);
+        _tft.setCursor(4, y);
+        _tft.print("PIN required to start");
+    }
+    y += 16;
+
+    if (_scanning) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Packets: %d", _packetCount);
+        _tft.setTextFont(FONT_CLI_BODY);
+        _tft.setTextColor(DARK_TEXT, CREAM_BG);
+        _tft.setCursor(4, y);
+        _tft.print(buf);
+    }
+
+    char footer[32];
+    if (_scanning) {
+        unsigned long s = (millis() - _startMs) / 1000;
+        snprintf(footer, sizeof(footer), "Time: %lus", s);
+    } else {
+        snprintf(footer, sizeof(footer), "C:Start(PIN)  Back:Exit");
+    }
+    drawFooter(footer);
+}
+
+void DeauthScanScreen::update() {
+    if (_scanning) {
+        // Packet count would be updated via wifi_scan_obj callbacks in a full
+        // implementation; for now we just mark dirty for elapsed time refresh.
+        ui_manager_obj.markDirty();
+    }
+}
+
+void DeauthScanScreen::onAction() {
+    if (_scanning) {
+        // Stop
+        wifi_scan_obj.StartScan(WIFI_SCAN_OFF);
+        _scanning = false;
+        ui_manager_obj.markDirty();
+        return;
+    }
+
+    // Check PIN gate
+    bool pinEnabled = settings_obj.loadSetting<bool>("PINEnabled");
+    if (pinEnabled) {
+        ui_manager_obj.requestPIN(
+            // onSuccess: start the actual sniff
+            []() { ui_manager_obj.deauthScreen()->doStart(); },
+            // onFail / cancel: go back to menu
+            []() { ui_manager_obj.showMenu(); }
+        );
+    } else {
+        doStart();
+    }
+}
+
+void DeauthScanScreen::doStart() {
+    _packetCount = 0;
+    _scanning    = true;
+    _startMs     = millis();
+    wifi_scan_obj.StartScan(WIFI_SCAN_DEAUTH, TFT_RED);
+    ui_manager_obj.markDirty();
+}
+
+void DeauthScanScreen::onBack() {
     if (_scanning) {
         wifi_scan_obj.StartScan(WIFI_SCAN_OFF);
         _scanning = false;

@@ -1,9 +1,17 @@
 #include "CarouselMenu.h"
 
+// Portrait layout constants (rotation 0: 135x240)
+#define PORT_CX      67   // horizontal centre
+#define PORT_CY     100   // vertical centre for card title
+#define PORT_VOFF    70   // pixel offset for adjacent cards (vertical)
+#define PORT_IND_X  128   // x of vertical indicator dots
+#define PORT_IND_START_Y  80  // y of first indicator dot
+
 CarouselMenu::CarouselMenu(MenuCard* items, int count)
     : _cards(items),
       _count(count),
       _selected(0),
+      _portrait(false),
       _offset(0.0f),
       _startOffset(0.0f),
       _anim(300)
@@ -12,6 +20,10 @@ CarouselMenu::CarouselMenu(MenuCard* items, int count)
 // ----------------------------------------------------------------
 // Public interface
 // ----------------------------------------------------------------
+
+void CarouselMenu::setPortraitMode(bool portrait) {
+    _portrait = portrait;
+}
 
 bool CarouselMenu::isAnimating() const {
     return _anim.isRunning();
@@ -39,11 +51,10 @@ void CarouselMenu::executeSelected() {
 }
 
 // ----------------------------------------------------------------
-// Draw
+// Draw — dispatch to horizontal or vertical layout
 // ----------------------------------------------------------------
 
 void CarouselMenu::draw(TFT_eSPI& tft) {
-    // Advance animation
     if (_anim.isRunning()) {
         float t = easeInOutCubic(_anim.getProgress());
         _offset = lerpf(_startOffset, 0.0f, t);
@@ -52,45 +63,45 @@ void CarouselMenu::draw(TFT_eSPI& tft) {
     }
 
     tft.fillScreen(CREAM_BG);
+    int off = (int)_offset;
 
-    int xOff = (int)_offset;
-
-    // Left card
-    if (_selected > 0)
-        drawCard(tft, _selected - 1, xOff - CAROUSEL_SIDE_OFFSET, false);
-
-    // Right card
-    if (_selected < _count - 1)
-        drawCard(tft, _selected + 1, xOff + CAROUSEL_SIDE_OFFSET, false);
-
-    // Center card drawn last so it renders on top of overlapping text
-    drawCard(tft, _selected, xOff, true);
-
-    drawIndicators(tft);
+    if (_portrait) {
+        // Vertical layout (135x240)
+        if (_selected > 0)
+            drawCardV(tft, _selected - 1, off - PORT_VOFF, false);
+        if (_selected < _count - 1)
+            drawCardV(tft, _selected + 1, off + PORT_VOFF, false);
+        drawCardV(tft, _selected, off, true);
+        drawIndicatorsV(tft);
+    } else {
+        // Horizontal layout (240x135)
+        if (_selected > 0)
+            drawCardH(tft, _selected - 1, off - CAROUSEL_SIDE_OFFSET, false);
+        if (_selected < _count - 1)
+            drawCardH(tft, _selected + 1, off + CAROUSEL_SIDE_OFFSET, false);
+        drawCardH(tft, _selected, off, true);
+        drawIndicatorsH(tft);
+    }
 }
 
 // ----------------------------------------------------------------
-// Private helpers
+// Horizontal helpers (landscape 240x135)
 // ----------------------------------------------------------------
 
-void CarouselMenu::drawCard(TFT_eSPI& tft, int index,
-                            int xOffset, bool isCenter) {
+void CarouselMenu::drawCardH(TFT_eSPI& tft, int index,
+                             int xOffset, bool isCenter) {
     int cx = CAROUSEL_CX + xOffset;
-
-    // Clip cards that have slid fully off screen
     if (cx < -40 || cx > CAROUSEL_W + 40) return;
 
     const MenuCard& card = _cards[index];
 
     if (isCenter) {
-        // Large golden title
         tft.setTextFont(FONT_LARGE);
         tft.setTextColor(GOLD_PRIMARY, CREAM_BG);
         int tw = tft.textWidth(card.title);
         tft.setCursor(cx - tw / 2, CAROUSEL_CY - 12);
         tft.print(card.title);
 
-        // Subtitle in small gray
         if (card.subtitle) {
             tft.setTextFont(FONT_SMALL);
             tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
@@ -99,7 +110,6 @@ void CarouselMenu::drawCard(TFT_eSPI& tft, int index,
             tft.print(card.subtitle);
         }
     } else {
-        // Small gray side title
         tft.setTextFont(FONT_MEDIUM);
         tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
         int tw = tft.textWidth(card.title);
@@ -108,7 +118,7 @@ void CarouselMenu::drawCard(TFT_eSPI& tft, int index,
     }
 }
 
-void CarouselMenu::drawIndicators(TFT_eSPI& tft) {
+void CarouselMenu::drawIndicatorsH(TFT_eSPI& tft) {
     if (_count <= 1) return;
 
     int spacing = 14;
@@ -117,10 +127,58 @@ void CarouselMenu::drawIndicators(TFT_eSPI& tft) {
 
     for (int i = 0; i < _count; i++) {
         int x = startX + i * spacing;
-        if (i == _selected) {
+        if (i == _selected)
             tft.fillCircle(x, CAROUSEL_IND_Y, 4, GOLD_PRIMARY);
-        } else {
+        else
             tft.drawCircle(x, CAROUSEL_IND_Y, 3, MEDIUM_GRAY);
+    }
+}
+
+// ----------------------------------------------------------------
+// Vertical helpers (portrait 135x240)
+// ----------------------------------------------------------------
+
+void CarouselMenu::drawCardV(TFT_eSPI& tft, int index,
+                             int yOffset, bool isCenter) {
+    int cy = PORT_CY + yOffset;
+    if (cy < -30 || cy > 270) return;  // off-screen
+
+    const MenuCard& card = _cards[index];
+
+    if (isCenter) {
+        tft.setTextFont(FONT_LARGE);
+        tft.setTextColor(GOLD_PRIMARY, CREAM_BG);
+        int tw = tft.textWidth(card.title);
+        tft.setCursor(PORT_CX - tw / 2, cy - 14);
+        tft.print(card.title);
+
+        if (card.subtitle) {
+            tft.setTextFont(FONT_SMALL);
+            tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
+            int sw = tft.textWidth(card.subtitle);
+            tft.setCursor(PORT_CX - sw / 2, cy + 18);
+            tft.print(card.subtitle);
         }
+    } else {
+        tft.setTextFont(FONT_MEDIUM);
+        tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
+        int tw = tft.textWidth(card.title);
+        tft.setCursor(PORT_CX - tw / 2, cy - 6);
+        tft.print(card.title);
+    }
+}
+
+void CarouselMenu::drawIndicatorsV(TFT_eSPI& tft) {
+    if (_count <= 1) return;
+
+    int spacing = 12;
+    int startY  = PORT_IND_START_Y;
+
+    for (int i = 0; i < _count; i++) {
+        int y = startY + i * spacing;
+        if (i == _selected)
+            tft.fillCircle(PORT_IND_X, y, 4, GOLD_PRIMARY);
+        else
+            tft.drawCircle(PORT_IND_X, y, 3, MEDIUM_GRAY);
     }
 }
