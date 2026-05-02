@@ -252,7 +252,8 @@ void setup()
 
   Serial.begin(115200);
 
-  while(!Serial)
+  uint32_t serial_wait_start = millis();
+  while(!Serial && (millis() - serial_wait_start < 3000))
     delay(10);
 
   #ifdef HAS_C5_SD
