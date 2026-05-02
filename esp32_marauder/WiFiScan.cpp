@@ -1637,6 +1637,29 @@ void WiFiScan::RunSetup() {
   #endif
 
   this->initWiFi(1);
+  this->applyWirelessOutputLimits();
+}
+
+void WiFiScan::applyWirelessOutputLimits() {
+  String wifi_power = settings_obj.loadSetting<String>("WiFiTxPower");
+  int8_t wifi_tx_quarter_dbm = 60; // ~15 dBm
+  if (wifi_power == "Low")
+    wifi_tx_quarter_dbm = 34; // ~8.5 dBm
+  else if (wifi_power == "High")
+    wifi_tx_quarter_dbm = 82; // ~20.5 dBm (Caution)
+  esp_wifi_set_max_tx_power(wifi_tx_quarter_dbm);
+
+  #ifdef HAS_BT
+    String bt_power = settings_obj.loadSetting<String>("BTTxPower");
+    esp_power_level_t bt_lvl = ESP_PWR_LVL_N2;
+    if (bt_power == "Low")
+      bt_lvl = ESP_PWR_LVL_N9;
+    else if (bt_power == "High")
+      bt_lvl = ESP_PWR_LVL_P9;
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, bt_lvl);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN, bt_lvl);
+    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, bt_lvl);
+  #endif
 }
 
 bool WiFiScan::isMetaIdentifier(uint16_t id) {
@@ -2856,7 +2879,7 @@ String WiFiScan::security_int_to_string(int security_type) {
       authtype = "[WPA3_PSK]";
       break;
 
-    #ifdef HAS_IDF_3
+    #ifdef WIFI_AUTH_WPA3_ENTERPRISE
     case WIFI_AUTH_WPA3_ENTERPRISE:
       authtype = "[WPA3]";
       break;
