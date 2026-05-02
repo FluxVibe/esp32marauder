@@ -37,6 +37,16 @@ void Settings::_buildCache() {
       _cache.PINCode = json["Settings"][i]["value"].as<String>();
     else if (name == "UILandscape")
       _cache.UILandscape = json["Settings"][i]["value"].as<bool>();
+    else if (name == "WiFiTxPower")
+      _cache.WiFiTxPower = json["Settings"][i]["value"].as<String>();
+    else if (name == "BTTxPower")
+      _cache.BTTxPower = json["Settings"][i]["value"].as<String>();
+    else if (name == "GPSTimeSync")
+      _cache.GPSTimeSync = json["Settings"][i]["value"].as<bool>();
+    else if (name == "GPSTimeSyncPeriod")
+      _cache.GPSTimeSyncPeriod = json["Settings"][i]["value"].as<int>();
+    else if (name == "TOTPSecret")
+      _cache.TOTPSecret = json["Settings"][i]["value"].as<String>();
   }
 }
 
@@ -112,6 +122,12 @@ template <> String Settings::loadSetting<String>(String key) {
     return _cache.ClientPW;
   if (key == "PINCode")
     return _cache.PINCode;
+  if (key == "WiFiTxPower")
+    return _cache.WiFiTxPower;
+  if (key == "BTTxPower")
+    return _cache.BTTxPower;
+  if (key == "TOTPSecret")
+    return _cache.TOTPSecret;
 
   // Unknown String key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -147,6 +163,8 @@ template <> bool Settings::loadSetting<bool>(String key) {
     return _cache.PINEnabled;
   if (key == "UILandscape")
     return _cache.UILandscape;
+  if (key == "GPSTimeSync")
+    return _cache.GPSTimeSync;
 
   // Unknown bool key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -236,6 +254,8 @@ template <> bool Settings::saveSetting<bool>(String key, bool value) {
         _cache.PINEnabled = value;
       else if (key == "UILandscape")
         _cache.UILandscape = value;
+      else if (key == "GPSTimeSync")
+        _cache.GPSTimeSync = value;
 
       this->printJsonSettings(settings_string);
 
@@ -279,6 +299,14 @@ template <> bool Settings::saveSetting<bool>(String key, String value) {
         _cache.ClientPW = value;
       else if (key == "PINCode")
         _cache.PINCode = value;
+      else if (key == "WiFiTxPower")
+        _cache.WiFiTxPower = value;
+      else if (key == "BTTxPower")
+        _cache.BTTxPower = value;
+      else if (key == "TOTPSecret")
+        _cache.TOTPSecret = value;
+      else if (key == "GPSTimeSyncPeriod")
+        _cache.GPSTimeSyncPeriod = value.toInt();
 
       this->printJsonSettings(settings_string);
 
@@ -433,6 +461,36 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][10]["value"] = true;
     jsonBuffer["Settings"][10]["range"]["min"] = false;
     jsonBuffer["Settings"][10]["range"]["max"] = true;
+
+    jsonBuffer["Settings"][11]["name"]  = "WiFiTxPower";
+    jsonBuffer["Settings"][11]["type"]  = "String";
+    jsonBuffer["Settings"][11]["value"] = "Medium";
+    jsonBuffer["Settings"][11]["range"]["min"] = "Low";
+    jsonBuffer["Settings"][11]["range"]["max"] = "High";
+
+    jsonBuffer["Settings"][12]["name"]  = "BTTxPower";
+    jsonBuffer["Settings"][12]["type"]  = "String";
+    jsonBuffer["Settings"][12]["value"] = "Medium";
+    jsonBuffer["Settings"][12]["range"]["min"] = "Low";
+    jsonBuffer["Settings"][12]["range"]["max"] = "High";
+
+    jsonBuffer["Settings"][13]["name"]  = "GPSTimeSync";
+    jsonBuffer["Settings"][13]["type"]  = "bool";
+    jsonBuffer["Settings"][13]["value"] = true;
+    jsonBuffer["Settings"][13]["range"]["min"] = false;
+    jsonBuffer["Settings"][13]["range"]["max"] = true;
+
+    jsonBuffer["Settings"][14]["name"]  = "GPSTimeSyncPeriod";
+    jsonBuffer["Settings"][14]["type"]  = "int";
+    jsonBuffer["Settings"][14]["value"] = 300;
+    jsonBuffer["Settings"][14]["range"]["min"] = 30;
+    jsonBuffer["Settings"][14]["range"]["max"] = 3600;
+
+    jsonBuffer["Settings"][15]["name"]  = "TOTPSecret";
+    jsonBuffer["Settings"][15]["type"]  = "String";
+    jsonBuffer["Settings"][15]["value"] = "";
+    jsonBuffer["Settings"][15]["range"]["min"] = "";
+    jsonBuffer["Settings"][15]["range"]["max"] = "";
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {

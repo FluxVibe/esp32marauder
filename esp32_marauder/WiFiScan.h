@@ -864,6 +864,7 @@ class WiFiScan
     void displayAnalyzerString(String str);
     String security_int_to_string(int security_type);
     void RunSetup();
+    void applyWirelessOutputLimits();
     int clearList(uint8_t list_type);
     bool addSSID(String essid);
     int generateSSIDs(int count = 20);
