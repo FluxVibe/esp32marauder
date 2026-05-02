@@ -194,6 +194,12 @@ class MenuFunctions
     Menu generateSSIDsMenu;
 
     Menu evilPortalMenu;
+    Menu totpMenu;
+    Menu totpAccountsMenu;
+    Menu totpAccountMenu;
+    int totpSelectedIndex = -1;
+    bool totpSortAlpha = true;
+    bool totpDeleteConfirm = false;
 
     //static void lv_tick_handler();
 
