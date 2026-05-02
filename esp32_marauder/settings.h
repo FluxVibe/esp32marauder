@@ -37,6 +37,11 @@ class Settings {
       bool   PINEnabled  = false;
       String PINCode     = "";
       bool   UILandscape = true;
+      String WiFiTxPower = "Medium";
+      String BTTxPower   = "Medium";
+      bool GPSTimeSync   = true;
+      int GPSTimeSyncPeriod = 300;
+      String TOTPSecret  = "";
     } _cache;
 
     void _buildCache();  // parse json_settings_string -> _cache
