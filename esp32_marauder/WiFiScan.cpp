@@ -2879,7 +2879,7 @@ String WiFiScan::security_int_to_string(int security_type) {
       authtype = "[WPA3_PSK]";
       break;
 
-    #ifdef HAS_IDF_3
+    #ifdef WIFI_AUTH_WPA3_ENTERPRISE
     case WIFI_AUTH_WPA3_ENTERPRISE:
       authtype = "[WPA3]";
       break;
