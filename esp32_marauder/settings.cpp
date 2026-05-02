@@ -37,6 +37,10 @@ void Settings::_buildCache() {
       _cache.PINCode = json["Settings"][i]["value"].as<String>();
     else if (name == "UILandscape")
       _cache.UILandscape = json["Settings"][i]["value"].as<bool>();
+    else if (name == "WiFiTxPower")
+      _cache.WiFiTxPower = json["Settings"][i]["value"].as<String>();
+    else if (name == "BTTxPower")
+      _cache.BTTxPower = json["Settings"][i]["value"].as<String>();
   }
 }
 
@@ -112,6 +116,10 @@ template <> String Settings::loadSetting<String>(String key) {
     return _cache.ClientPW;
   if (key == "PINCode")
     return _cache.PINCode;
+  if (key == "WiFiTxPower")
+    return _cache.WiFiTxPower;
+  if (key == "BTTxPower")
+    return _cache.BTTxPower;
 
   // Unknown String key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -279,6 +287,10 @@ template <> bool Settings::saveSetting<bool>(String key, String value) {
         _cache.ClientPW = value;
       else if (key == "PINCode")
         _cache.PINCode = value;
+      else if (key == "WiFiTxPower")
+        _cache.WiFiTxPower = value;
+      else if (key == "BTTxPower")
+        _cache.BTTxPower = value;
 
       this->printJsonSettings(settings_string);
 
@@ -433,6 +445,18 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][10]["value"] = true;
     jsonBuffer["Settings"][10]["range"]["min"] = false;
     jsonBuffer["Settings"][10]["range"]["max"] = true;
+
+    jsonBuffer["Settings"][11]["name"]  = "WiFiTxPower";
+    jsonBuffer["Settings"][11]["type"]  = "String";
+    jsonBuffer["Settings"][11]["value"] = "Medium";
+    jsonBuffer["Settings"][11]["range"]["min"] = "Low";
+    jsonBuffer["Settings"][11]["range"]["max"] = "High";
+
+    jsonBuffer["Settings"][12]["name"]  = "BTTxPower";
+    jsonBuffer["Settings"][12]["type"]  = "String";
+    jsonBuffer["Settings"][12]["value"] = "Medium";
+    jsonBuffer["Settings"][12]["range"]["min"] = "Low";
+    jsonBuffer["Settings"][12]["range"]["max"] = "High";
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {

@@ -37,6 +37,8 @@ class Settings {
       bool   PINEnabled  = false;
       String PINCode     = "";
       bool   UILandscape = true;
+      String WiFiTxPower = "Medium";
+      String BTTxPower   = "Medium";
     } _cache;
 
     void _buildCache();  // parse json_settings_string -> _cache

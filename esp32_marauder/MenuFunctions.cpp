@@ -2906,6 +2906,32 @@ void MenuFunctions::RunSetup()
     }, settings_obj.loadSetting<bool>(settings_obj.setting_index_to_name(i)));
   }
 
+  this->addNodes(&settingsMenu, "WiFiTxPower", TFTLIGHTGREY, NULL, SETTINGS, [this]() {
+    String current = settings_obj.loadSetting<String>("WiFiTxPower");
+    String next = "Low";
+    if (current == "Low") next = "Medium";
+    else if (current == "Medium") next = "High";
+    settings_obj.saveSetting<bool>("WiFiTxPower", next);
+    wifi_scan_obj.applyWirelessOutputLimits();
+    display_obj.clearScreen();
+    display_obj.showCenterText("WiFi TX: " + next, TFT_HEIGHT / 2);
+    delay(700);
+    this->changeMenu(&settingsMenu, true);
+  });
+
+  this->addNodes(&settingsMenu, "BTTxPower", TFTLIGHTGREY, NULL, SETTINGS, [this]() {
+    String current = settings_obj.loadSetting<String>("BTTxPower");
+    String next = "Low";
+    if (current == "Low") next = "Medium";
+    else if (current == "Medium") next = "High";
+    settings_obj.saveSetting<bool>("BTTxPower", next);
+    wifi_scan_obj.applyWirelessOutputLimits();
+    display_obj.clearScreen();
+    display_obj.showCenterText("BT TX: " + next, TFT_HEIGHT / 2);
+    delay(700);
+    this->changeMenu(&settingsMenu, true);
+  });
+
   // Specific setting menu
   specSettingMenu.parentMenu = &settingsMenu;
   addNodes(&specSettingMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() {
