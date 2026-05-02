@@ -3219,6 +3219,13 @@ void MenuFunctions::RunSetup()
     String ret_val = "";
 
     bool pressed = true;
+    uint32_t last_nav_ms = 0;
+    auto navReady = [&last_nav_ms]() -> bool {
+      uint32_t now = millis();
+      if (now - last_nav_ms < 120) return false;
+      last_nav_ms = now;
+      return true;
+    };
 
     wifi_scan_obj.current_mini_kb_ssid = "";
 
@@ -3227,6 +3234,22 @@ void MenuFunctions::RunSetup()
         while (!c_btn.justReleased())
           delay(1);
       }
+      #ifdef HAS_U
+        while (u_btn.isHeld()) delay(1);
+        u_btn.justPressed();
+      #endif
+      #ifdef HAS_D
+        while (d_btn.isHeld()) delay(1);
+        d_btn.justPressed();
+      #endif
+      #ifdef HAS_L
+        while (l_btn.isHeld()) delay(1);
+        l_btn.justPressed();
+      #endif
+      #ifdef HAS_R
+        while (r_btn.isHeld()) delay(1);
+        r_btn.justPressed();
+      #endif
     #endif
 
     int str_len = wifi_scan_obj.alfa.length() + 1; 
@@ -3248,7 +3271,7 @@ void MenuFunctions::RunSetup()
           #ifdef HAS_MINI_KB
             // Cycle char previous
             #ifdef HAS_L
-              if (l_btn.justPressed()) {
+              if (l_btn.justPressed() && navReady()) {
                 pressed = true;
                 if (this->mini_kb_index > 0)
                   this->mini_kb_index--;
@@ -3265,7 +3288,7 @@ void MenuFunctions::RunSetup()
 
             // Cycle char next
             #ifdef HAS_R
-              if (r_btn.justPressed()) {
+              if (r_btn.justPressed() && navReady()) {
                 pressed = true;
                 if (this->mini_kb_index < str_len - 2)
                   this->mini_kb_index++;
@@ -3283,7 +3306,7 @@ void MenuFunctions::RunSetup()
             //// 5-WAY SWITCH STUFF
             // Add character
             #if (defined(HAS_D) && defined(HAS_R))
-              if (d_btn.justPressed()) {
+              if (d_btn.justPressed() && navReady()) {
                 pressed = true;
                 wifi_scan_obj.current_mini_kb_ssid.concat(String(char_array[this->mini_kb_index]).c_str());
                 while (!d_btn.justReleased())
@@ -3293,7 +3316,7 @@ void MenuFunctions::RunSetup()
 
             // Remove character
             #if (defined(HAS_U) && defined(HAS_L))
-              if (u_btn.justPressed()) {
+              if (u_btn.justPressed() && navReady()) {
                 pressed = true;
                 if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
                   wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
@@ -3439,7 +3462,7 @@ void MenuFunctions::RunSetup()
             uint8_t menu_button = display_obj.menuButton(&t_x, &t_y, touched);
 
             // Cycle char previous
-            if (menu_button == UP_BUTTON) {
+            if (menu_button == UP_BUTTON && navReady()) {
               pressed = true;
               if (this->mini_kb_index > 0)
                 this->mini_kb_index--;
@@ -3454,7 +3477,7 @@ void MenuFunctions::RunSetup()
             }
 
             // Cycle char next
-            if (menu_button == DOWN_BUTTON) {
+            if (menu_button == DOWN_BUTTON && navReady()) {
               pressed = true;
               if (this->mini_kb_index < str_len - 2)
                 this->mini_kb_index++;
@@ -3490,7 +3513,7 @@ void MenuFunctions::RunSetup()
             //// PARTIAL SWITCH STUFF
             // Advance char or add char
             #if (defined(HAS_D) && !defined(HAS_R))
-              if (d_btn.justPressed()) {
+              if (d_btn.justPressed() && navReady()) {
                 bool was_held = false;
                 pressed = true;
                 while(!d_btn.justReleased()) {
@@ -3517,7 +3540,7 @@ void MenuFunctions::RunSetup()
 
             // Prev char or remove char
             #if (defined(HAS_U) && !defined(HAS_L))
-              if (u_btn.justPressed()) {
+              if (u_btn.justPressed() && navReady()) {
                 bool was_held = false;
                 pressed = true;
                 while(!u_btn.justReleased()) {
