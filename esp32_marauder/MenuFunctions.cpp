@@ -2999,7 +2999,7 @@ void MenuFunctions::RunSetup()
           #ifdef HAS_MINI_KB
             // Cycle char previous
             #ifdef HAS_L
-              if ((l_btn.justPressed()) || (l_btn.isHeld())) {
+              if (l_btn.justPressed()) {
                 pressed = true;
                 if (this->mini_kb_index > 0)
                   this->mini_kb_index--;
@@ -3009,19 +3009,14 @@ void MenuFunctions::RunSetup()
                 targetMenu->list->set(0, MenuNode{String(char_array[this->mini_kb_index]).c_str(), false, TFTCYAN, 0, NULL, true, NULL});
                 this->buildButtons(targetMenu);
 
-                while (!l_btn.justReleased()) {
-                  l_btn.justPressed();
-                  if (!l_btn.isHeld())
-                    delay(1);
-                  else
-                    break;
-                }
+                while (!l_btn.justReleased())
+                  delay(1);
               }
             #endif
 
             // Cycle char next
             #ifdef HAS_R
-              if ((r_btn.justPressed()) || (r_btn.isHeld())) {
+              if (r_btn.justPressed()) {
                 pressed = true;
                 if (this->mini_kb_index < str_len - 2)
                   this->mini_kb_index++;
@@ -3031,13 +3026,8 @@ void MenuFunctions::RunSetup()
                 targetMenu->list->set(0, MenuNode{String(char_array[this->mini_kb_index]).c_str(), false, TFTCYAN, 0, NULL, true, NULL});
                 this->buildButtons(targetMenu, 0, String(char_array[this->mini_kb_index]).c_str());
                 
-                while (!r_btn.justReleased()) {
-                  r_btn.justPressed();
-                  if (!r_btn.isHeld())
-                    delay(1);
-                  else
-                    break;
-                }
+                while (!r_btn.justReleased())
+                  delay(1);
               }
             #endif
 
@@ -3056,7 +3046,8 @@ void MenuFunctions::RunSetup()
             #if (defined(HAS_U) && defined(HAS_L))
               if (u_btn.justPressed()) {
                 pressed = true;
-                wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
+                if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
+                  wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
                 while (!u_btn.justReleased())
                   delay(1);
               }
@@ -3100,7 +3091,8 @@ void MenuFunctions::RunSetup()
 
                   // Remove letter from string
                   if (u_btn.isHeld()) {
-                    wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
+                    if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
+                      wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
                     was_held = true;
                     break;
                   }
@@ -3154,7 +3146,8 @@ void MenuFunctions::RunSetup()
                 }
                 if (this->isKeyPressed(KEY_BACKSPACE)) {
                   pressed = true;
-                  wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
+                  if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
+                    wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
                 }
               }
             }
@@ -3239,7 +3232,8 @@ void MenuFunctions::RunSetup()
             // Remove character when select button is held
             if ((display_obj.isTouchHeld()) && (display_obj.menuButton(&t_x, &t_y, touched, true) == SELECT_BUTTON)) {
               pressed = true;
-              wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
+              if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
+                wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
               while (display_obj.menuButton(&t_x, &t_y, display_obj.updateTouch(&t_x, &t_y)) < 0)
                 delay(1);
             }
@@ -3282,7 +3276,8 @@ void MenuFunctions::RunSetup()
 
                   // Remove letter from string
                   if (u_btn.isHeld()) {
-                    wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
+                    if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
+                      wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
                     was_held = true;
                     break;
                   }
