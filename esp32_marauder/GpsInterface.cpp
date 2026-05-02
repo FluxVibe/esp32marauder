@@ -784,5 +784,16 @@ void GpsInterface::main() {
   else if ((!nmea.isValid()) && (num_sat <= 0)) {
     this->setGPSInfo();
   }
+
+  if (settings_obj.loadSetting<bool>("GPSTimeSync") && nmea.isValid()) {
+    int period_s = settings_obj.loadSetting<int>("GPSTimeSyncPeriod");
+    if (period_s < 30) period_s = 30;
+    uint32_t now_ms = millis();
+    if ((last_auto_sync_ms == 0) || (now_ms - last_auto_sync_ms >= (uint32_t)period_s * 1000UL)) {
+      if (this->syncSystemTimeFromGPS()) {
+        last_auto_sync_ms = now_ms;
+      }
+    }
+  }
 }
 #endif

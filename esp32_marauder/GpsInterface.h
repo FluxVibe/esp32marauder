@@ -110,6 +110,7 @@ class GpsInterface {
     type_t type_flag = GPSTYPE_NATIVE;
 
     bool queue_enabled_flag=0;
+    uint32_t last_auto_sync_ms = 0;
     LinkedList<nmea_sentence_t> *queue=NULL;
 
     unsigned int text_cycles=0;
