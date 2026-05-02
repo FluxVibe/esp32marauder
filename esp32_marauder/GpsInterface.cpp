@@ -1,10 +1,12 @@
 #include "GpsInterface.h"
 #include <time.h>
 #include <sys/time.h>
+#include "settings.h"
 
 #ifdef HAS_GPS
 
 extern GpsInterface gps_obj;
+extern Settings settings_obj;
 
 char nmeaBuffer[100];
 

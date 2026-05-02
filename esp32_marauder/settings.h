@@ -40,6 +40,7 @@ class Settings {
       String WiFiTxPower = "Medium";
       String BTTxPower   = "Medium";
       bool GPSTimeSync   = true;
+      int GPSTimeSyncPeriod = 300;
       String TOTPSecret  = "";
     } _cache;
 
