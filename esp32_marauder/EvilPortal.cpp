@@ -2,9 +2,7 @@
 
 char apName[MAX_AP_NAME_SIZE] = "PORTAL";
 
-#ifdef HAS_PSRAM
-  char* index_html = nullptr;
-#endif
+char* index_html = nullptr;
 
 AsyncWebServer server(80);
 
