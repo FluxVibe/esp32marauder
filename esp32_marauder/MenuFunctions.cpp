@@ -1,15 +1,8 @@
 #include "MenuFunctions.h"
 #include "lang_var.h"
 #include "TotpUtil.h"
-#include "TotpVault.h"
 #include <time.h>
-#include <vector>
-#include <algorithm>
 #include "esp_sleep.h"
-#if defined(MARAUDER_M5STICKC) || defined(MARAUDER_M5STICKCP2)
-  #include "AXP192.h"
-  extern AXP192 axp192_obj;
-#endif
 
 #ifdef HAS_SCREEN
 
@@ -1546,9 +1539,6 @@ void MenuFunctions::RunSetup()
 
   evilPortalMenu.list = new LinkedList<MenuNode>();
   ssidsMenu.list = new LinkedList<MenuNode>();
-  totpMenu.list = new LinkedList<MenuNode>();
-  totpAccountsMenu.list = new LinkedList<MenuNode>();
-  totpAccountMenu.list = new LinkedList<MenuNode>();
 
   #ifdef HAS_GPS
     gpsPOIMenu.list = new LinkedList<MenuNode>();
@@ -1573,9 +1563,6 @@ void MenuFunctions::RunSetup()
   loadSSIDsMenu.name = "Load SSIDs";
   saveAPsMenu.name = "Save APs";
   loadAPsMenu.name = "Load APs";
-  totpMenu.name = "TOTP";
-  totpAccountsMenu.name = "Accounts";
-  totpAccountMenu.name = "Account";
   saveATsMenu.name = "Save Airtags";
   loadATsMenu.name = "Load Airtags";
 
@@ -1627,21 +1614,6 @@ void MenuFunctions::RunSetup()
   #endif
   this->addNodes(&mainMenu, text_table1[9], TFTBLUE, NULL, DEVICE, [this]() {
     this->changeMenu(&deviceMenu, true);
-  });
-  this->addNodes(&mainMenu, "TOTP", TFTGREEN, NULL, DEVICE_INFO, [this]() {
-    if (settings_obj.loadSetting<bool>("PINEnabled")) {
-      String entered = this->miniKeyboard(&miniKbMenu, true);
-      if (entered != settings_obj.loadSetting<String>("PINCode")) {
-        display_obj.clearScreen();
-        display_obj.showCenterText("Invalid PIN", TFT_HEIGHT / 2);
-        delay(1000);
-        this->changeMenu(&mainMenu, true);
-        return;
-      }
-    }
-    totp_vault.begin();
-    totp_vault.loadFromSD();
-    this->changeMenu(&totpMenu, true);
   });
   this->addNodes(&mainMenu, text_table1[30], TFTLIGHTGREY, NULL, REBOOT, []() {
     ESP.restart();
@@ -2786,25 +2758,16 @@ void MenuFunctions::RunSetup()
       this->changeMenu(&deviceMenu, true);
       return;
     }
-    time_t now = time(nullptr);
-    uint32_t rem = 30 - ((uint32_t)now % 30);
-    String code = generateTotpCode(secret, (uint32_t)now, 30, 6);
-    display_obj.showCenterText("TOTP: " + code, TFT_HEIGHT / 2 - 10);
-    display_obj.tft.drawRect(20, TFT_HEIGHT / 2 + 18, TFT_WIDTH - 40, 10, TFT_WHITE);
-    int fillW = ((TFT_WIDTH - 42) * rem) / 30;
-    display_obj.tft.fillRect(21, TFT_HEIGHT / 2 + 19, fillW, 8, TFT_GREEN);
-    delay(1200);
+    String code = generateTotpCode(secret, (uint32_t)time(nullptr), 30, 6);
+    display_obj.showCenterText("TOTP: " + code, TFT_HEIGHT / 2);
+    delay(1800);
     this->changeMenu(&deviceMenu, true);
   });
   this->addNodes(&deviceMenu, "Power Off", TFTRED, NULL, DEVICE_INFO, [this]() {
     display_obj.clearScreen();
     display_obj.showCenterText("Powering Off...", TFT_HEIGHT / 2);
     delay(700);
-    #if defined(MARAUDER_M5STICKC) || defined(MARAUDER_M5STICKCP2)
-      axp192_obj.PowerOff();
-    #else
-      esp_deep_sleep_start();
-    #endif
+    esp_deep_sleep_start();
   });
 
   #ifdef HAS_SD
@@ -2829,157 +2792,6 @@ void MenuFunctions::RunSetup()
 
   // Save Files Menu
   saveFileMenu.parentMenu = &deviceMenu;
-
-  // TOTP menu
-  totpMenu.parentMenu = &mainMenu;
-  this->addNodes(&totpMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() {
-    this->changeMenu(totpMenu.parentMenu, true);
-  });
-  this->addNodes(&totpMenu, "Accounts", TFTGREEN, NULL, DEVICE_INFO, [this]() {
-    if (totp_vault.count() == 0) {
-      display_obj.clearScreen();
-      display_obj.showCenterText("No accounts yet", TFT_HEIGHT / 2);
-      delay(900);
-      this->changeMenu(&totpMenu, true);
-      return;
-    }
-    totpAccountsMenu.list->clear();
-    this->addNodes(&totpAccountsMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() {
-      this->changeMenu(&totpMenu, true);
-    });
-    std::vector<int> idx;
-    for (int i = 0; i < totp_vault.count(); i++) idx.push_back(i);
-    if (this->totpSortAlpha) {
-      std::sort(idx.begin(), idx.end(), [](int a, int b) {
-        return totp_vault.get(a).label < totp_vault.get(b).label;
-      });
-    } else {
-      std::reverse(idx.begin(), idx.end());
-    }
-    for (int k = 0; k < (int)idx.size(); k++) {
-      int i = idx[k];
-      TotpAccount acct = totp_vault.get(i);
-      this->addNodes(&totpAccountsMenu, acct.label, TFTCYAN, NULL, DEVICE_INFO, [this, i]() {
-        this->totpSelectedIndex = i;
-        this->totpDeleteConfirm = false;
-        this->changeMenu(&totpAccountMenu, true);
-      });
-    }
-    this->changeMenu(&totpAccountsMenu, true);
-  });
-  this->addNodes(&totpMenu, "Sort: A-Z/Recent", TFTLIGHTGREY, NULL, DEVICE_INFO, [this]() {
-    this->totpSortAlpha = !this->totpSortAlpha;
-    display_obj.clearScreen();
-    display_obj.showCenterText(this->totpSortAlpha ? "Sort: A-Z" : "Sort: Recent", TFT_HEIGHT / 2);
-    delay(800);
-    this->changeMenu(&totpMenu, true);
-  });
-  this->addNodes(&totpMenu, "Search Account", TFTLIGHTGREY, NULL, DEVICE_INFO, [this]() {
-    String q = this->miniKeyboard(&miniKbMenu, true);
-    q.toLowerCase();
-    totpAccountsMenu.list->clear();
-    this->addNodes(&totpAccountsMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() { this->changeMenu(&totpMenu, true); });
-    int found_count = 0;
-    for (int i = 0; i < totp_vault.count(); i++) {
-      TotpAccount acct = totp_vault.get(i);
-      String n = acct.label; n.toLowerCase();
-      if (q.length() == 0 || n.indexOf(q) != -1) {
-        found_count++;
-        this->addNodes(&totpAccountsMenu, acct.label, TFTCYAN, NULL, DEVICE_INFO, [this, i]() {
-          this->totpSelectedIndex = i;
-          this->changeMenu(&totpAccountMenu, true);
-        });
-      }
-    }
-    if (found_count == 0) {
-      display_obj.clearScreen();
-      display_obj.showCenterText("No match", TFT_HEIGHT / 2);
-      delay(900);
-      this->changeMenu(&totpMenu, true);
-      return;
-    }
-    this->changeMenu(&totpAccountsMenu, true);
-  });
-  this->addNodes(&totpMenu, "Add Account", TFTCYAN, NULL, DEVICE_INFO, [this]() {
-    if (totp_vault.count() >= TOTP_MAX_ACCOUNTS) {
-      display_obj.showCenterText("Max 100 reached", TFT_HEIGHT / 2);
-      delay(1000);
-      this->changeMenu(&totpMenu, true);
-      return;
-    }
-    String label = this->miniKeyboard(&miniKbMenu, true);
-    String secret = this->miniKeyboard(&miniKbMenu, true);
-    if (label.length() && secret.length()) {
-      if (totp_vault.addAccount(label, secret)) {
-        totp_vault.saveToSD();
-      } else {
-        display_obj.clearScreen();
-        display_obj.showCenterText("Duplicate/Invalid", TFT_HEIGHT / 2);
-        delay(900);
-      }
-    }
-    this->changeMenu(&totpMenu, true);
-  });
-
-  totpAccountMenu.parentMenu = &totpAccountsMenu;
-  this->addNodes(&totpAccountMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() {
-    this->totpDeleteConfirm = false;
-    this->changeMenu(&totpAccountsMenu, true);
-  });
-  this->addNodes(&totpAccountMenu, "Show Code", TFTGREEN, NULL, DEVICE_INFO, [this]() {
-    if (this->totpSelectedIndex < 0 || this->totpSelectedIndex >= totp_vault.count()) return;
-    TotpAccount acct = totp_vault.get(this->totpSelectedIndex);
-    time_t now = time(nullptr);
-    uint32_t rem = 30 - ((uint32_t)now % 30);
-    String code = generateTotpCode(acct.secret, (uint32_t)now, 30, 6);
-    display_obj.clearScreen();
-    display_obj.showCenterText(acct.label + ": " + code, TFT_HEIGHT / 2 - 10);
-    display_obj.tft.drawRect(20, TFT_HEIGHT / 2 + 18, TFT_WIDTH - 40, 10, TFT_WHITE);
-    int fillW = ((TFT_WIDTH - 42) * rem) / 30;
-    display_obj.tft.fillRect(21, TFT_HEIGHT / 2 + 19, fillW, 8, TFT_GREEN);
-    delay(1200);
-    this->changeMenu(&totpAccountMenu, true);
-  });
-  this->addNodes(&totpAccountMenu, "Secret (masked)", TFTLIGHTGREY, NULL, DEVICE_INFO, [this]() {
-    if (this->totpSelectedIndex < 0 || this->totpSelectedIndex >= totp_vault.count()) return;
-    TotpAccount acct = totp_vault.get(this->totpSelectedIndex);
-    String sec = acct.secret;
-    if (sec.length() > 6) sec = sec.substring(0, 3) + "****" + sec.substring(sec.length() - 3);
-    else sec = "******";
-    display_obj.clearScreen();
-    display_obj.showCenterText(sec, TFT_HEIGHT / 2);
-    delay(1200);
-    this->changeMenu(&totpAccountMenu, true);
-  });
-  this->addNodes(&totpAccountMenu, "Delete Account", TFTRED, NULL, DEVICE_INFO, [this]() {
-    if (this->totpSelectedIndex < 0 || this->totpSelectedIndex >= totp_vault.count()) return;
-    if (!this->totpDeleteConfirm) {
-      this->totpDeleteConfirm = true;
-      display_obj.clearScreen();
-      display_obj.showCenterText("Press delete again", TFT_HEIGHT / 2);
-      delay(900);
-      this->changeMenu(&totpAccountMenu, true);
-      return;
-    }
-    this->totpDeleteConfirm = false;
-    totp_vault.removeAccount(this->totpSelectedIndex);
-    totp_vault.saveToSD();
-    this->totpSelectedIndex = -1;
-    this->changeMenu(&totpMenu, true);
-  });
-  this->addNodes(&totpMenu, "Migrate PIN Key", TFTORANGE, NULL, DEVICE_INFO, [this]() {
-    String oldPin = this->miniKeyboard(&miniKbMenu, true);
-    String newPin = this->miniKeyboard(&miniKbMenu, true);
-    if (oldPin.length() && newPin.length() && totp_vault.migratePinKey(oldPin, newPin) && totp_vault.loadFromSD()) {
-      settings_obj.saveSetting<bool>("PINCode", newPin);
-      display_obj.showCenterText("Vault rekeyed", TFT_HEIGHT / 2);
-    } else {
-      display_obj.showCenterText("Rekey verify failed", TFT_HEIGHT / 2);
-    }
-    delay(1000);
-    this->changeMenu(&totpMenu, true);
-  });
-
   this->addNodes(&saveFileMenu, text09, TFTLIGHTGREY, NULL, 0, [this]() {
     this->changeMenu(saveFileMenu.parentMenu, true);
   });
@@ -3077,18 +2889,6 @@ void MenuFunctions::RunSetup()
         else
           display_obj.showCenterText("GPS Fix/Time Invalid", TFT_HEIGHT / 2);
         delay(1200);
-        this->changeMenu(&gpsMenu, true);
-      });
-      this->addNodes(&gpsMenu, "Auto Sync Period", TFTGREEN, NULL, GPS_MENU, [this]() {
-        int current = settings_obj.loadSetting<int>("GPSTimeSyncPeriod");
-        int next = 60;
-        if (current == 60) next = 300;
-        else if (current == 300) next = 900;
-        else if (current == 900) next = 1800;
-        settings_obj.saveSetting<bool>("GPSTimeSyncPeriod", String(next));
-        display_obj.clearScreen();
-        display_obj.showCenterText("AutoSync: " + String(next) + "s", TFT_HEIGHT / 2);
-        delay(1000);
         this->changeMenu(&gpsMenu, true);
       });
 
@@ -3219,13 +3019,6 @@ void MenuFunctions::RunSetup()
     String ret_val = "";
 
     bool pressed = true;
-    uint32_t last_nav_ms = 0;
-    auto navReady = [&last_nav_ms]() -> bool {
-      uint32_t now = millis();
-      if (now - last_nav_ms < 120) return false;
-      last_nav_ms = now;
-      return true;
-    };
 
     wifi_scan_obj.current_mini_kb_ssid = "";
 
@@ -3234,22 +3027,6 @@ void MenuFunctions::RunSetup()
         while (!c_btn.justReleased())
           delay(1);
       }
-      #ifdef HAS_U
-        while (u_btn.isHeld()) delay(1);
-        u_btn.justPressed();
-      #endif
-      #ifdef HAS_D
-        while (d_btn.isHeld()) delay(1);
-        d_btn.justPressed();
-      #endif
-      #ifdef HAS_L
-        while (l_btn.isHeld()) delay(1);
-        l_btn.justPressed();
-      #endif
-      #ifdef HAS_R
-        while (r_btn.isHeld()) delay(1);
-        r_btn.justPressed();
-      #endif
     #endif
 
     int str_len = wifi_scan_obj.alfa.length() + 1; 
@@ -3271,7 +3048,7 @@ void MenuFunctions::RunSetup()
           #ifdef HAS_MINI_KB
             // Cycle char previous
             #ifdef HAS_L
-              if (l_btn.justPressed() && navReady()) {
+              if (l_btn.justPressed()) {
                 pressed = true;
                 if (this->mini_kb_index > 0)
                   this->mini_kb_index--;
@@ -3288,7 +3065,7 @@ void MenuFunctions::RunSetup()
 
             // Cycle char next
             #ifdef HAS_R
-              if (r_btn.justPressed() && navReady()) {
+              if (r_btn.justPressed()) {
                 pressed = true;
                 if (this->mini_kb_index < str_len - 2)
                   this->mini_kb_index++;
@@ -3306,7 +3083,7 @@ void MenuFunctions::RunSetup()
             //// 5-WAY SWITCH STUFF
             // Add character
             #if (defined(HAS_D) && defined(HAS_R))
-              if (d_btn.justPressed() && navReady()) {
+              if (d_btn.justPressed()) {
                 pressed = true;
                 wifi_scan_obj.current_mini_kb_ssid.concat(String(char_array[this->mini_kb_index]).c_str());
                 while (!d_btn.justReleased())
@@ -3316,7 +3093,7 @@ void MenuFunctions::RunSetup()
 
             // Remove character
             #if (defined(HAS_U) && defined(HAS_L))
-              if (u_btn.justPressed() && navReady()) {
+              if (u_btn.justPressed()) {
                 pressed = true;
                 if (wifi_scan_obj.current_mini_kb_ssid.length() > 0)
                   wifi_scan_obj.current_mini_kb_ssid.remove(wifi_scan_obj.current_mini_kb_ssid.length() - 1);
@@ -3462,7 +3239,7 @@ void MenuFunctions::RunSetup()
             uint8_t menu_button = display_obj.menuButton(&t_x, &t_y, touched);
 
             // Cycle char previous
-            if (menu_button == UP_BUTTON && navReady()) {
+            if (menu_button == UP_BUTTON) {
               pressed = true;
               if (this->mini_kb_index > 0)
                 this->mini_kb_index--;
@@ -3477,7 +3254,7 @@ void MenuFunctions::RunSetup()
             }
 
             // Cycle char next
-            if (menu_button == DOWN_BUTTON && navReady()) {
+            if (menu_button == DOWN_BUTTON) {
               pressed = true;
               if (this->mini_kb_index < str_len - 2)
                 this->mini_kb_index++;
@@ -3513,7 +3290,7 @@ void MenuFunctions::RunSetup()
             //// PARTIAL SWITCH STUFF
             // Advance char or add char
             #if (defined(HAS_D) && !defined(HAS_R))
-              if (d_btn.justPressed() && navReady()) {
+              if (d_btn.justPressed()) {
                 bool was_held = false;
                 pressed = true;
                 while(!d_btn.justReleased()) {
@@ -3540,7 +3317,7 @@ void MenuFunctions::RunSetup()
 
             // Prev char or remove char
             #if (defined(HAS_U) && !defined(HAS_L))
-              if (u_btn.justPressed() && navReady()) {
+              if (u_btn.justPressed()) {
                 bool was_held = false;
                 pressed = true;
                 while(!u_btn.justReleased()) {
@@ -4149,3 +3926,6 @@ void MenuFunctions::displayCurrentMenu(int start_index)
 #endif
 
 #endif
+
+
+

@@ -43,8 +43,6 @@ void Settings::_buildCache() {
       _cache.BTTxPower = json["Settings"][i]["value"].as<String>();
     else if (name == "GPSTimeSync")
       _cache.GPSTimeSync = json["Settings"][i]["value"].as<bool>();
-    else if (name == "GPSTimeSyncPeriod")
-      _cache.GPSTimeSyncPeriod = json["Settings"][i]["value"].as<int>();
     else if (name == "TOTPSecret")
       _cache.TOTPSecret = json["Settings"][i]["value"].as<String>();
   }
@@ -305,8 +303,6 @@ template <> bool Settings::saveSetting<bool>(String key, String value) {
         _cache.BTTxPower = value;
       else if (key == "TOTPSecret")
         _cache.TOTPSecret = value;
-      else if (key == "GPSTimeSyncPeriod")
-        _cache.GPSTimeSyncPeriod = value.toInt();
 
       this->printJsonSettings(settings_string);
 
@@ -480,17 +476,11 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][13]["range"]["min"] = false;
     jsonBuffer["Settings"][13]["range"]["max"] = true;
 
-    jsonBuffer["Settings"][14]["name"]  = "GPSTimeSyncPeriod";
-    jsonBuffer["Settings"][14]["type"]  = "int";
-    jsonBuffer["Settings"][14]["value"] = 300;
-    jsonBuffer["Settings"][14]["range"]["min"] = 30;
-    jsonBuffer["Settings"][14]["range"]["max"] = 3600;
-
-    jsonBuffer["Settings"][15]["name"]  = "TOTPSecret";
-    jsonBuffer["Settings"][15]["type"]  = "String";
-    jsonBuffer["Settings"][15]["value"] = "";
-    jsonBuffer["Settings"][15]["range"]["min"] = "";
-    jsonBuffer["Settings"][15]["range"]["max"] = "";
+    jsonBuffer["Settings"][14]["name"]  = "TOTPSecret";
+    jsonBuffer["Settings"][14]["type"]  = "String";
+    jsonBuffer["Settings"][14]["value"] = "";
+    jsonBuffer["Settings"][14]["range"]["min"] = "";
+    jsonBuffer["Settings"][14]["range"]["max"] = "";
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {
