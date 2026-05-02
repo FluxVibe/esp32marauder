@@ -1,4 +1,6 @@
 #include "GpsInterface.h"
+#include <time.h>
+#include <sys/time.h>
 
 #ifdef HAS_GPS
 
@@ -638,6 +640,25 @@ String GpsInterface::getFixStatusAsString() {
     return "Yes";
   else
     return "No";
+}
+
+bool GpsInterface::syncSystemTimeFromGPS() {
+  if (!nmea.isValid() || nmea.getYear() < 2020) return false;
+
+  struct tm tm_utc = {};
+  tm_utc.tm_year = nmea.getYear() - 1900;
+  tm_utc.tm_mon  = nmea.getMonth() - 1;
+  tm_utc.tm_mday = nmea.getDay();
+  tm_utc.tm_hour = nmea.getHour();
+  tm_utc.tm_min  = nmea.getMinute();
+  tm_utc.tm_sec  = nmea.getSecond();
+  tm_utc.tm_isdst = 0;
+
+  time_t t = mktime(&tm_utc);
+  if (t <= 0) return false;
+
+  struct timeval tv = { .tv_sec = t, .tv_usec = 0 };
+  return settimeofday(&tv, nullptr) == 0;
 }
 
 bool GpsInterface::getGpsModuleStatus() {

@@ -41,6 +41,10 @@ void Settings::_buildCache() {
       _cache.WiFiTxPower = json["Settings"][i]["value"].as<String>();
     else if (name == "BTTxPower")
       _cache.BTTxPower = json["Settings"][i]["value"].as<String>();
+    else if (name == "GPSTimeSync")
+      _cache.GPSTimeSync = json["Settings"][i]["value"].as<bool>();
+    else if (name == "TOTPSecret")
+      _cache.TOTPSecret = json["Settings"][i]["value"].as<String>();
   }
 }
 
@@ -120,6 +124,8 @@ template <> String Settings::loadSetting<String>(String key) {
     return _cache.WiFiTxPower;
   if (key == "BTTxPower")
     return _cache.BTTxPower;
+  if (key == "TOTPSecret")
+    return _cache.TOTPSecret;
 
   // Unknown String key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -155,6 +161,8 @@ template <> bool Settings::loadSetting<bool>(String key) {
     return _cache.PINEnabled;
   if (key == "UILandscape")
     return _cache.UILandscape;
+  if (key == "GPSTimeSync")
+    return _cache.GPSTimeSync;
 
   // Unknown bool key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -244,6 +252,8 @@ template <> bool Settings::saveSetting<bool>(String key, bool value) {
         _cache.PINEnabled = value;
       else if (key == "UILandscape")
         _cache.UILandscape = value;
+      else if (key == "GPSTimeSync")
+        _cache.GPSTimeSync = value;
 
       this->printJsonSettings(settings_string);
 
@@ -291,6 +301,8 @@ template <> bool Settings::saveSetting<bool>(String key, String value) {
         _cache.WiFiTxPower = value;
       else if (key == "BTTxPower")
         _cache.BTTxPower = value;
+      else if (key == "TOTPSecret")
+        _cache.TOTPSecret = value;
 
       this->printJsonSettings(settings_string);
 
@@ -457,6 +469,18 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][12]["value"] = "Medium";
     jsonBuffer["Settings"][12]["range"]["min"] = "Low";
     jsonBuffer["Settings"][12]["range"]["max"] = "High";
+
+    jsonBuffer["Settings"][13]["name"]  = "GPSTimeSync";
+    jsonBuffer["Settings"][13]["type"]  = "bool";
+    jsonBuffer["Settings"][13]["value"] = true;
+    jsonBuffer["Settings"][13]["range"]["min"] = false;
+    jsonBuffer["Settings"][13]["range"]["max"] = true;
+
+    jsonBuffer["Settings"][14]["name"]  = "TOTPSecret";
+    jsonBuffer["Settings"][14]["type"]  = "String";
+    jsonBuffer["Settings"][14]["value"] = "";
+    jsonBuffer["Settings"][14]["range"]["min"] = "";
+    jsonBuffer["Settings"][14]["range"]["max"] = "";
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {

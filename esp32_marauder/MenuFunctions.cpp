@@ -1,5 +1,8 @@
 #include "MenuFunctions.h"
 #include "lang_var.h"
+#include "TotpUtil.h"
+#include <time.h>
+#include "esp_sleep.h"
 
 #ifdef HAS_SCREEN
 
@@ -2740,6 +2743,32 @@ void MenuFunctions::RunSetup()
   this->addNodes(&deviceMenu, text08, TFTBLUE, NULL, SETTINGS, [this]() {
     this->changeMenu(&settingsMenu, true);
   });
+  this->addNodes(&deviceMenu, "Show TOTP", TFTGREEN, NULL, DEVICE_INFO, [this]() {
+    display_obj.clearScreen();
+    if (!settings_obj.loadSetting<bool>("PINEnabled")) {
+      display_obj.showCenterText("Enable PIN lock first", TFT_HEIGHT / 2);
+      delay(1400);
+      this->changeMenu(&deviceMenu, true);
+      return;
+    }
+    String secret = settings_obj.loadSetting<String>("TOTPSecret");
+    if (secret.length() == 0) {
+      display_obj.showCenterText("Set TOTPSecret in settings", TFT_HEIGHT / 2);
+      delay(1400);
+      this->changeMenu(&deviceMenu, true);
+      return;
+    }
+    String code = generateTotpCode(secret, (uint32_t)time(nullptr), 30, 6);
+    display_obj.showCenterText("TOTP: " + code, TFT_HEIGHT / 2);
+    delay(1800);
+    this->changeMenu(&deviceMenu, true);
+  });
+  this->addNodes(&deviceMenu, "Power Off", TFTRED, NULL, DEVICE_INFO, [this]() {
+    display_obj.clearScreen();
+    display_obj.showCenterText("Powering Off...", TFT_HEIGHT / 2);
+    delay(700);
+    esp_deep_sleep_start();
+  });
 
   #ifdef HAS_SD
     if (sd_obj.supported) {
@@ -2853,6 +2882,15 @@ void MenuFunctions::RunSetup()
         wifi_scan_obj.currentScanMode = WIFI_SCAN_OFF;
         this->changeMenu(&gpsPOIMenu, true);
       });
+      this->addNodes(&gpsMenu, "Sync System Time", TFTGREEN, NULL, GPS_MENU, [this]() {
+        display_obj.clearScreen();
+        if (gps_obj.syncSystemTimeFromGPS())
+          display_obj.showCenterText("GPS Time Synced", TFT_HEIGHT / 2);
+        else
+          display_obj.showCenterText("GPS Fix/Time Invalid", TFT_HEIGHT / 2);
+        delay(1200);
+        this->changeMenu(&gpsMenu, true);
+      });
 
       // GPS POI Menu
       gpsPOIMenu.parentMenu = &gpsMenu;
@@ -2929,6 +2967,17 @@ void MenuFunctions::RunSetup()
     display_obj.clearScreen();
     display_obj.showCenterText("BT TX: " + next, TFT_HEIGHT / 2);
     delay(700);
+    this->changeMenu(&settingsMenu, true);
+  });
+
+  this->addNodes(&settingsMenu, "Set TOTP Secret", TFTLIGHTGREY, NULL, SETTINGS, [this]() {
+    String secret = this->miniKeyboard(&miniKbMenu, true);
+    if (secret.length() > 0) {
+      settings_obj.saveSetting<bool>("TOTPSecret", secret);
+      display_obj.clearScreen();
+      display_obj.showCenterText("TOTP secret saved", TFT_HEIGHT / 2);
+      delay(1000);
+    }
     this->changeMenu(&settingsMenu, true);
   });
 

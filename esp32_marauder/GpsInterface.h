@@ -74,6 +74,7 @@ class GpsInterface {
 
     String generateGXgga();
     String generateGXrmc();
+    bool syncSystemTimeFromGPS();
 
   private:
     enum type_t {
