@@ -11,15 +11,17 @@ extern UIManager ui_manager_obj;
 // ----------------------------------------------------------------
 
 const SettingsScreen::SettingItem SettingsScreen::ITEMS[] = {
-    { "UI 방향",    "UILandscape", false },  // toggle: 가로↔세로
-    { "PIN 잠금",   "PINEnabled",  false },  // toggle: ON↔OFF
-    { "PIN 변경",   "SET_PIN",     true  },  // action: enter PINScreen(SET)
-    { "ForcePMKID",         "ForcePMKID",  false },
-    { "SavePCAP",           "SavePCAP",    false },
-    { "EnableLED",          "EnableLED",   false },
-    { "ChanHop",            "ChanHop",     false },
-    { "ForceProbe",         "ForceProbe",  false },
-    { "EPDeauth",           "EPDeauth",    false },
+    { "UI 방향",   "UILandscape",  false, false },  // toggle: 가로↔세로
+    { "PIN 잠금",  "PINEnabled",   false, false },  // toggle: ON↔OFF
+    { "PIN 변경",  "SET_PIN",      true,  false },  // action: enter PINScreen(SET)
+    { "WiFi 출력", "WiFiTxPower",  false, true  },  // cycle: Low→Medium→High
+    { "BLE 출력",  "BTTxPower",    false, true  },  // cycle: Low→Medium→High
+    { "ForcePMKID","ForcePMKID",   false, false },
+    { "SavePCAP",  "SavePCAP",     false, false },
+    { "EnableLED", "EnableLED",    false, false },
+    { "ChanHop",   "ChanHop",      false, false },
+    { "ForceProbe","ForceProbe",   false, false },
+    { "EPDeauth",  "EPDeauth",     false, false },
 };
 const int SettingsScreen::ITEM_COUNT =
     sizeof(SettingsScreen::ITEMS) / sizeof(SettingsScreen::ITEMS[0]);
@@ -56,6 +58,15 @@ void SettingsScreen::handleDown() {
 
 const char* SettingsScreen::getValueStr(const SettingItem& item) const {
     if (item.isAction) return ">";
+
+    if (item.isCycle) {
+        // 3-way String setting: return stored value directly
+        static char buf[8];
+        String v = settings_obj.loadSetting<String>(item.key);
+        strncpy(buf, v.c_str(), sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
+        return buf;
+    }
 
     // UILandscape: show "가로" / "세로"
     if (strcmp(item.key, "UILandscape") == 0) {
@@ -100,7 +111,7 @@ void SettingsScreen::draw() {
         y += 22;
     }
 
-    drawFooter("C:토글  D:하단  U:상단");
+    drawFooter("C:변경  D:하단  U:상단");
 }
 
 // ----------------------------------------------------------------
@@ -112,10 +123,20 @@ void SettingsScreen::onAction() {
     const SettingItem& item = ITEMS[_cursor];
 
     if (item.isAction) {
-        // Special actions
         if (strcmp(item.key, "SET_PIN") == 0) {
             ui_manager_obj.startPINSetup();
         }
+        return;
+    }
+
+    if (item.isCycle) {
+        // Cycle Low → Medium → High → Low
+        String cur = settings_obj.loadSetting<String>(item.key);
+        String next;
+        if (cur == "Low")        next = "Medium";
+        else if (cur == "Medium") next = "High";
+        else                      next = "Low";
+        settings_obj.saveSetting<bool>(item.key, next);
         return;
     }
 

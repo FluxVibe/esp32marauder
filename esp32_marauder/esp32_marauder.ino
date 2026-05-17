@@ -320,13 +320,6 @@ void setup()
   #ifdef HAS_SCREEN
     display_obj.RunSetup();
     display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    #ifdef HYBRID_UI
-      ui_manager_obj.init();
-      // Boot-time PIN gate (runs before splash screen finishes)
-      if (settings_obj.loadSetting<bool>("PINEnabled")) {
-        ui_manager_obj.lockScreen();
-      }
-    #endif
   #endif
 
   // Init PWM brightness AFTER display init (so ledcAttach overrides TFT_eSPI's pinMode)
@@ -367,6 +360,16 @@ void setup()
     Serial.println(F("Current settings format not supported. Installing new default settings..."));
     settings_obj.createDefaultSettings(SPIFFS);
   }
+
+  // Init UIManager here — after settings load so orientation + PIN gate read correct values
+  #ifdef HAS_SCREEN
+    #ifdef HYBRID_UI
+      ui_manager_obj.init();
+      if (settings_obj.loadSetting<bool>("PINEnabled")) {
+        ui_manager_obj.lockScreen();
+      }
+    #endif
+  #endif
 
   buffer_obj = Buffer();
 

@@ -1637,28 +1637,31 @@ void WiFiScan::RunSetup() {
   #endif
 
   this->initWiFi(1);
-  this->applyWirelessOutputLimits();
 }
 
 void WiFiScan::applyWirelessOutputLimits() {
-  String wifi_power = settings_obj.loadSetting<String>("WiFiTxPower");
-  int8_t wifi_tx_quarter_dbm = 60; // ~15 dBm
-  if (wifi_power == "Low")
-    wifi_tx_quarter_dbm = 34; // ~8.5 dBm
-  else if (wifi_power == "High")
-    wifi_tx_quarter_dbm = 82; // ~20.5 dBm (Caution)
-  esp_wifi_set_max_tx_power(wifi_tx_quarter_dbm);
+  if (this->wifi_initialized) {
+    String wifi_power = settings_obj.loadSetting<String>("WiFiTxPower");
+    int8_t wifi_tx_quarter_dbm = 60; // ~15 dBm
+    if (wifi_power == "Low")
+      wifi_tx_quarter_dbm = 34; // ~8.5 dBm
+    else if (wifi_power == "High")
+      wifi_tx_quarter_dbm = 82; // ~20.5 dBm (Caution)
+    esp_wifi_set_max_tx_power(wifi_tx_quarter_dbm);
+  }
 
   #ifdef HAS_BT
-    String bt_power = settings_obj.loadSetting<String>("BTTxPower");
-    esp_power_level_t bt_lvl = ESP_PWR_LVL_N2;
-    if (bt_power == "Low")
-      bt_lvl = ESP_PWR_LVL_N9;
-    else if (bt_power == "High")
-      bt_lvl = ESP_PWR_LVL_P9;
-    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, bt_lvl);
-    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN, bt_lvl);
-    esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, bt_lvl);
+    if (this->ble_initialized) {
+      String bt_power = settings_obj.loadSetting<String>("BTTxPower");
+      esp_power_level_t bt_lvl = ESP_PWR_LVL_N2;
+      if (bt_power == "Low")
+        bt_lvl = ESP_PWR_LVL_N9;
+      else if (bt_power == "High")
+        bt_lvl = ESP_PWR_LVL_P9;
+      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, bt_lvl);
+      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_SCAN, bt_lvl);
+      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, bt_lvl);
+    }
   #endif
 }
 
@@ -2249,8 +2252,8 @@ void WiFiScan::startWiFiAttacks(uint8_t scan_mode, uint16_t color, String title_
   this->setMac();
   this->changeChannel(this->set_channel);
   esp_wifi_set_promiscuous(true);
-  esp_wifi_set_max_tx_power(82);
   this->wifi_initialized = true;
+  this->applyWirelessOutputLimits();
   this->setLEDMode(MODE_ATTACK);
   initTime = millis();
 }
@@ -5366,6 +5369,8 @@ void WiFiScan::RunProbeScan(uint8_t scan_mode, uint16_t color) {
 void WiFiScan::RunSourApple(uint8_t scan_mode, uint16_t color) {
   #ifdef HAS_BT
     NimBLEDevice::init("");
+    this->ble_initialized = true;
+    this->applyWirelessOutputLimits();
     NimBLEServer *pServer = NimBLEDevice::createServer();
 
     pAdvertising = pServer->getAdvertising();
@@ -5440,6 +5445,8 @@ void WiFiScan::RunBluetoothScan(uint8_t scan_mode, uint16_t color) {
 
 
     NimBLEDevice::init("");
+    this->ble_initialized = true;
+    this->applyWirelessOutputLimits();
     pBLEScan = NimBLEDevice::getScan(); //create new scan
     if ((scan_mode == BT_SCAN_ALL) ||
         (scan_mode == BT_SCAN_RAYBAN) ||

@@ -25,8 +25,9 @@ public:
 private:
     struct SettingItem {
         const char* label;
-        const char* key;     // settings_obj key, or "SET_PIN" special action
+        const char* key;      // settings_obj key, or "SET_PIN" special action
         bool        isAction; // true = execute (not toggle)
+        bool        isCycle;  // true = 3-way String cycle (Low/Medium/High)
     };
 
     static const SettingItem ITEMS[];
