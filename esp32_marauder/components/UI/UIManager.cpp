@@ -264,6 +264,7 @@ void UIManager::handleCenterHold() {
 #ifdef HAS_AUDIO
     if (_screen == _musicScreen) {
         _musicScreen->toggleVolumeOverlay();
+        markDirty();
         return;
     }
 #endif

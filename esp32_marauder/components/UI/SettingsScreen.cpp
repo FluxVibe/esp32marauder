@@ -137,7 +137,8 @@ void SettingsScreen::onAction() {
         if (cur == "Low")        next = "Medium";
         else if (cur == "Medium") next = "High";
         else                      next = "Low";
-        settings_obj.saveSetting<bool>(item.key, next);
+        settings_obj.saveSetting<String>(item.key, next);
+        ui_manager_obj.markDirty();
         return;
     }
 
@@ -148,6 +149,7 @@ void SettingsScreen::onAction() {
     if (strcmp(item.key, "UILandscape") == 0) {
         ui_manager_obj.applyOrientation();
     }
+    ui_manager_obj.markDirty();
 }
 
 void SettingsScreen::onBack() {
