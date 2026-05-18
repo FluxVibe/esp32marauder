@@ -10,8 +10,13 @@
 #include <math.h>
 
 #ifdef AUDIO_MP3
-  // pschatzmann/AudioTools ^0.9.9 required for MP3 support
-  #include <AudioCodecs/CodecMP3Helix.h>
+  // pschatzmann/arduino-audio-tools: header path changed in v1.0.0+
+  // Define AUDIO_TOOLS_NEW_PATH in configs.h if using v1.0.0 or later
+  #ifdef AUDIO_TOOLS_NEW_PATH
+    #include <AudioTools/AudioCodecs/CodecMP3Helix.h>
+  #else
+    #include <AudioCodecs/CodecMP3Helix.h>
+  #endif
   using namespace audio_tools;
 #endif
 

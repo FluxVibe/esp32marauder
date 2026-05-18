@@ -174,8 +174,9 @@
     //#define HAS_C5_SD
     #define HAS_SIMPLEX_DISPLAY
     #define HYBRID_UI   // portrait-only carousel + CLI screens
-    #define HAS_AUDIO   // A2DP source music playback
-    //#define AUDIO_MP3   // MP3 support — requires pschatzmann/AudioTools library
+    #define HAS_AUDIO          // A2DP source music playback
+    #define AUDIO_MP3          // MP3 support via pschatzmann/arduino-audio-tools
+    #define AUDIO_TOOLS_NEW_PATH // v1.0.0+: headers moved to AudioTools/AudioCodecs/
   #endif
 
   #ifdef MARAUDER_V7
