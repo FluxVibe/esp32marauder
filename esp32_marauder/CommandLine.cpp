@@ -224,6 +224,7 @@ void CommandLine::runCommand(String input) {
     Serial.println(HELP_HEAD);
     Serial.println(HELP_CH_CMD);
     Serial.println(HELP_SETTINGS_CMD);
+    Serial.println(HELP_CLEARPIN_CMD);
     Serial.println(HELP_CLEARAP_CMD_A);
     Serial.println(HELP_REBOOT_CMD);
     Serial.println(HELP_UPDATE_CMD_A);
@@ -523,6 +524,14 @@ void CommandLine::runCommand(String input) {
         return;
       }
     }
+  }
+
+  else if (cmd_args.get(0) == CLEARPIN_CMD) {
+    settings_obj.saveSetting<bool>("PINEnabled", false);
+    settings_obj.saveSetting<bool>("PINCode", String(""));
+    Serial.println(F("PIN lock disabled. Rebooting..."));
+    delay(500);
+    ESP.restart();
   }
 
   else if (cmd_args.get(0) == REBOOT_CMD)
