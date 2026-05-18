@@ -10,6 +10,9 @@ class BLEScanScreen;
 class DeauthScanScreen;
 class PINScreen;
 class SettingsScreen;
+#ifdef HAS_AUDIO
+class MusicScreen;
+#endif
 
 enum UIMode {
     UI_CAROUSEL,  // landscape or portrait, retro menu
@@ -58,6 +61,10 @@ public:
     DeauthScanScreen* deauthScreen();
     SettingsScreen*   settingsScreen();
     PINScreen*        pinScreen();
+#ifdef HAS_AUDIO
+    MusicScreen*      musicScreen();
+    void              showMusicScreen();
+#endif
 
 private:
     TFT_eSPI&      _tft;
@@ -74,6 +81,9 @@ private:
     DeauthScanScreen* _deauthScreen;
     SettingsScreen*   _settingsScreen;
     PINScreen*        _pinScreen;
+#ifdef HAS_AUDIO
+    MusicScreen*      _musicScreen;
+#endif
 
     void setRotation(int r);
 };

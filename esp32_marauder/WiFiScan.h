@@ -871,6 +871,7 @@ class WiFiScan
     int generateSSIDs(int count = 20);
     bool shutdownWiFi();
     bool shutdownBLE();
+    void stopAllScans();   // stop WiFi scans + deinit BLE (prepare for A2DP)
     bool scanning();
     bool joinWiFi(String ssid, String password, bool gui = true);
     void getMAC(bool get_sta, uint8_t* mac);

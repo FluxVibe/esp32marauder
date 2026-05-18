@@ -11,11 +11,11 @@ extern UIManager ui_manager_obj;
 // ----------------------------------------------------------------
 
 const SettingsScreen::SettingItem SettingsScreen::ITEMS[] = {
-    { "UI 방향",   "UILandscape",  false, false },  // toggle: 가로↔세로
-    { "PIN 잠금",  "PINEnabled",   false, false },  // toggle: ON↔OFF
-    { "PIN 변경",  "SET_PIN",      true,  false },  // action: enter PINScreen(SET)
-    { "WiFi 출력", "WiFiTxPower",  false, true  },  // cycle: Low→Medium→High
-    { "BLE 출력",  "BTTxPower",    false, true  },  // cycle: Low→Medium→High
+    { "UI Orient", "UILandscape",  false, false },  // toggle: Landscape/Portrait
+    { "PIN Lock",  "PINEnabled",   false, false },  // toggle: ON/OFF
+    { "Set PIN",   "SET_PIN",      true,  false },  // action: enter PINScreen(SET)
+    { "WiFi Power","WiFiTxPower",  false, true  },  // cycle: Low/Medium/High
+    { "BLE Power", "BTTxPower",    false, true  },  // cycle: Low/Medium/High
     { "ForcePMKID","ForcePMKID",   false, false },
     { "SavePCAP",  "SavePCAP",     false, false },
     { "EncryptPCAP","EncryptPCAP", false, false },
@@ -69,9 +69,9 @@ const char* SettingsScreen::getValueStr(const SettingItem& item) const {
         return buf;
     }
 
-    // UILandscape: show "가로" / "세로"
+    // UILandscape: show Landscape / Portrait
     if (strcmp(item.key, "UILandscape") == 0) {
-        return settings_obj.loadSetting<bool>("UILandscape") ? "가로" : "세로";
+        return settings_obj.loadSetting<bool>("UILandscape") ? "Landscape" : "Portrait";
     }
 
     return settings_obj.loadSetting<bool>(item.key) ? "ON" : "OFF";
@@ -112,7 +112,7 @@ void SettingsScreen::draw() {
         y += 22;
     }
 
-    drawFooter("C:변경  D:하단  U:상단");
+    drawFooter("C:Change D:Down U:Up");
 }
 
 // ----------------------------------------------------------------

@@ -1,11 +1,21 @@
 #include "CarouselMenu.h"
 
-// Portrait layout constants (rotation 0: 135x240)
-#define PORT_CX      67   // horizontal centre
-#define PORT_CY     100   // vertical centre for card title
-#define PORT_VOFF    70   // pixel offset for adjacent cards (vertical)
-#define PORT_IND_X  128   // x of vertical indicator dots
-#define PORT_IND_START_Y  80  // y of first indicator dot
+// Portrait layout constants — display-specific
+#ifdef MARAUDER_MINI
+  // 128×128 square
+  #define PORT_CX      64
+  #define PORT_CY      54
+  #define PORT_VOFF    40
+  #define PORT_IND_X  122
+  #define PORT_IND_START_Y  36
+#else
+  // 135×240
+  #define PORT_CX      67
+  #define PORT_CY     100
+  #define PORT_VOFF    70
+  #define PORT_IND_X  128
+  #define PORT_IND_START_Y  80
+#endif
 
 CarouselMenu::CarouselMenu(MenuCard* items, int count)
     : _cards(items),
@@ -141,7 +151,7 @@ void CarouselMenu::drawIndicatorsH(TFT_eSPI& tft) {
 void CarouselMenu::drawCardV(TFT_eSPI& tft, int index,
                              int yOffset, bool isCenter) {
     int cy = PORT_CY + yOffset;
-    if (cy < -30 || cy > 270) return;  // off-screen
+    if (cy < -30 || cy > CLI_H + 30) return;  // off-screen
 
     const MenuCard& card = _cards[index];
 

@@ -2,6 +2,11 @@
 #include "CLIScreen.h"
 #include "PINScreen.h"
 #include "SettingsScreen.h"
+#ifdef HAS_AUDIO
+  #include "MusicScreen.h"
+  #include "../../MusicPlayer.h"
+  extern MusicPlayer music_player_obj;
+#endif
 #include "../../settings.h"
 
 extern Settings settings_obj;
@@ -30,6 +35,11 @@ static void actionLock() {
 static void actionSettings() {
     if (g_ui) g_ui->showScreen(g_ui->settingsScreen());
 }
+#ifdef HAS_AUDIO
+static void actionMusic() {
+    if (g_ui) g_ui->showMusicScreen();
+}
+#endif
 
 // ----------------------------------------------------------------
 // Static menu card table
@@ -40,6 +50,9 @@ static MenuCard s_cards[] = {
     { "Deauth Snif", "Sniff packets", actionDeauth   },
     { "Lock",        "Lock device",   actionLock     },
     { "Settings",    "Configure",     actionSettings },
+#ifdef HAS_AUDIO
+    { "Music",       "BT Audio",      actionMusic    },
+#endif
 };
 static const int CARD_COUNT = sizeof(s_cards) / sizeof(s_cards[0]);
 
@@ -60,6 +73,9 @@ UIManager::UIManager(TFT_eSPI& tft)
       _deauthScreen(nullptr),
       _settingsScreen(nullptr),
       _pinScreen(nullptr)
+#ifdef HAS_AUDIO
+      , _musicScreen(nullptr)
+#endif
 {}
 
 UIManager::~UIManager() {
@@ -69,6 +85,9 @@ UIManager::~UIManager() {
     delete _deauthScreen;
     delete _settingsScreen;
     delete _pinScreen;
+#ifdef HAS_AUDIO
+    delete _musicScreen;
+#endif
 }
 
 // Screen accessors
@@ -77,6 +96,13 @@ BLEScanScreen*   UIManager::bleScreen()     { return _bleScreen;     }
 DeauthScanScreen* UIManager::deauthScreen() { return _deauthScreen;  }
 SettingsScreen*  UIManager::settingsScreen(){ return _settingsScreen; }
 PINScreen*       UIManager::pinScreen()     { return _pinScreen;     }
+#ifdef HAS_AUDIO
+MusicScreen*     UIManager::musicScreen()   { return _musicScreen;   }
+void UIManager::showMusicScreen() {
+    music_player_obj.loadFileList();
+    showScreen(_musicScreen);
+}
+#endif
 
 void UIManager::init() {
     g_ui = this;
@@ -87,6 +113,9 @@ void UIManager::init() {
     _deauthScreen   = new DeauthScanScreen(_tft);
     _settingsScreen = new SettingsScreen(_tft);
     _pinScreen      = new PINScreen(_tft);
+#ifdef HAS_AUDIO
+    _musicScreen    = new MusicScreen(_tft);
+#endif
 
     applyOrientation();
     showMenu();
@@ -197,6 +226,11 @@ void UIManager::handleUp() {
     } else if (_screen == _settingsScreen) {
         _settingsScreen->handleUp();
         markDirty();
+#ifdef HAS_AUDIO
+    } else if (_screen == _musicScreen) {
+        _musicScreen->handleUp();
+        markDirty();
+#endif
     }
 }
 
@@ -209,6 +243,11 @@ void UIManager::handleDown() {
     } else if (_screen == _settingsScreen) {
         _settingsScreen->handleDown();
         markDirty();
+#ifdef HAS_AUDIO
+    } else if (_screen == _musicScreen) {
+        _musicScreen->handleDown();
+        markDirty();
+#endif
     }
 }
 

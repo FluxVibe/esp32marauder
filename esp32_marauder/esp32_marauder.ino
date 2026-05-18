@@ -51,6 +51,10 @@ https://www.online-utility.org/image/convert/to/XBM
   #endif
 #endif
 
+#ifdef HAS_AUDIO
+  #include "MusicPlayer.h"
+#endif
+
 #ifdef HAS_BUTTONS
   #include "Switches.h"
   
@@ -92,6 +96,10 @@ CommandLine cli_obj;
   #ifdef HYBRID_UI
     UIManager ui_manager_obj(display_obj.tft);
   #endif
+#endif
+
+#ifdef HAS_AUDIO
+  MusicPlayer music_player_obj;
 #endif
 
 #if defined(HAS_SD) && !defined(HAS_C5_SD)
@@ -369,6 +377,10 @@ void setup()
         ui_manager_obj.lockScreen();
       }
     #endif
+  #endif
+
+  #ifdef HAS_AUDIO
+    music_player_obj.init();
   #endif
 
   buffer_obj = Buffer();

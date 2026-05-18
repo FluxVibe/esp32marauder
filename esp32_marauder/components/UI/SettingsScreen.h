@@ -36,7 +36,8 @@ private:
     int _cursor;    // currently highlighted row
     int _scrollTop; // first visible row index
 
-    static const int VISIBLE_ROWS = 9;  // fits in 135×240 portrait
+    // computed so rows fit between header and footer on any display size
+    static const int VISIBLE_ROWS = (CLI_FOOTER_Y - CLI_HEADER_H) / 22;
 
     void drawItem(int idx, int y, bool selected);
     const char* getValueStr(const SettingItem& item) const;

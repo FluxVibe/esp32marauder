@@ -33,20 +33,35 @@
 #define FONT_CLI_HEAD  2   // ~16pt — header bar
 
 // =============================================================
-//  Layout constants
+//  Layout constants — display-specific
 // =============================================================
 
-// Landscape carousel (rotation 1): logical 240 x 135
-#define CAROUSEL_W     240
-#define CAROUSEL_H     135
-#define CAROUSEL_CX    120   // horizontal center
-#define CAROUSEL_CY     55   // vertical center for card title
-#define CAROUSEL_SIDE_OFFSET 110  // px offset for adjacent cards
-#define CAROUSEL_IND_Y  122  // y of page indicator dots
+#ifdef MARAUDER_MINI
+  // 128×128 square ST7735 (portrait-only mode)
+  #define CAROUSEL_W            128
+  #define CAROUSEL_H            128
+  #define CAROUSEL_CX            64
+  #define CAROUSEL_CY            50
+  #define CAROUSEL_SIDE_OFFSET   65
+  #define CAROUSEL_IND_Y        120
 
-// Portrait CLI (rotation 0): logical 135 x 240
-#define CLI_W          135
-#define CLI_H          240
-#define CLI_HEADER_H    20  // header bar height
-#define CLI_FOOTER_Y   225  // y position of footer text
-#define CLI_BODY_START  22  // first y of body content
+  #define CLI_W          128
+  #define CLI_H          128
+  #define CLI_HEADER_H    16
+  #define CLI_FOOTER_Y   112
+  #define CLI_BODY_START  18
+#else
+  // M5StickC / default: landscape carousel 240×135, portrait CLI 135×240
+  #define CAROUSEL_W            240
+  #define CAROUSEL_H            135
+  #define CAROUSEL_CX           120
+  #define CAROUSEL_CY            55
+  #define CAROUSEL_SIDE_OFFSET  110
+  #define CAROUSEL_IND_Y        122
+
+  #define CLI_W          135
+  #define CLI_H          240
+  #define CLI_HEADER_H    20
+  #define CLI_FOOTER_Y   225
+  #define CLI_BODY_START  22
+#endif

@@ -173,6 +173,9 @@
     #define HAS_IDF_3
     //#define HAS_C5_SD
     #define HAS_SIMPLEX_DISPLAY
+    #define HYBRID_UI   // portrait-only carousel + CLI screens
+    #define HAS_AUDIO   // A2DP source music playback
+    #define AUDIO_MP3   // MP3 support via pschatzmann/AudioTools
   #endif
 
   #ifdef MARAUDER_V7

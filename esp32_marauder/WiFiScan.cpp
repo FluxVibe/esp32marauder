@@ -2319,6 +2319,11 @@ bool WiFiScan::shutdownBLE() {
   return true;
 }
 
+void WiFiScan::stopAllScans() {
+    this->StartScan(WIFI_SCAN_OFF);
+    if (this->ble_initialized) this->shutdownBLE();
+}
+
 // Function to stop all wifi scans
 void WiFiScan::StopScan(uint8_t scan_mode) {
   if ((currentScanMode == WIFI_SCAN_PROBE) ||
