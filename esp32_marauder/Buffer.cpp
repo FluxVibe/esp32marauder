@@ -9,8 +9,9 @@ Buffer::Buffer(){
 void Buffer::createFile(String name, bool is_pcap, bool is_gpx){
   int i=0;
   if (is_pcap) {
+    const String ext = _enc_enabled ? ".epcap" : ".pcap";
     do{
-      fileName = "/"+name+"_"+(String)i+".pcap";
+      fileName = "/"+name+"_"+(String)i+ext;
       i++;
     } while(fs->exists(fileName));
   }
@@ -28,8 +29,14 @@ void Buffer::createFile(String name, bool is_pcap, bool is_gpx){
   }
 
   Serial.println(fileName);
-  
+
   file = fs->open(fileName, FILE_WRITE);
+  if (_enc_enabled && is_pcap) {
+    // Plaintext file header: 4-byte magic 'MEPC' + 16-byte IV (nonce)
+    const uint8_t magic[4] = {'M', 'E', 'P', 'C'};
+    file.write(magic, 4);
+    file.write(_enc_nonce, 16);
+  }
   file.close();
 }
 
@@ -180,21 +187,45 @@ void Buffer::saveFs(){
 
   if(useA){
     if(bufSizeB > 0){
+      if (_enc_enabled)
+        mbedtls_aes_crypt_ctr(&_enc_ctx, bufSizeB, &_enc_nc_off, _enc_nonce, _enc_stream, bufB, bufB);
       file.write(bufB, bufSizeB);
     }
     if(bufSizeA > 0){
+      if (_enc_enabled)
+        mbedtls_aes_crypt_ctr(&_enc_ctx, bufSizeA, &_enc_nc_off, _enc_nonce, _enc_stream, bufA, bufA);
       file.write(bufA, bufSizeA);
     }
   } else {
     if(bufSizeA > 0){
+      if (_enc_enabled)
+        mbedtls_aes_crypt_ctr(&_enc_ctx, bufSizeA, &_enc_nc_off, _enc_nonce, _enc_stream, bufA, bufA);
       file.write(bufA, bufSizeA);
     }
     if(bufSizeB > 0){
+      if (_enc_enabled)
+        mbedtls_aes_crypt_ctr(&_enc_ctx, bufSizeB, &_enc_nc_off, _enc_nonce, _enc_stream, bufB, bufB);
       file.write(bufB, bufSizeB);
     }
   }
 
   file.close();
+}
+
+void Buffer::enableEncryption(const uint8_t* key16, const uint8_t* iv16) {
+  mbedtls_aes_init(&_enc_ctx);
+  mbedtls_aes_setkey_enc(&_enc_ctx, key16, 128);
+  memcpy(_enc_nonce, iv16, 16);
+  memset(_enc_stream, 0, 16);
+  _enc_nc_off = 0;
+  _enc_enabled = true;
+}
+
+void Buffer::disableEncryption() {
+  if (_enc_enabled) {
+    mbedtls_aes_free(&_enc_ctx);
+    _enc_enabled = false;
+  }
 }
 
 void Buffer::saveSerial() {

@@ -32,6 +32,7 @@
 #include "mbedtls/bignum.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/ecp.h"
+#include "mbedtls/sha256.h"
 #ifndef HAS_IDF_3
   #include <lwip/etharp.h>
   #include <lwip/ip_addr.h>

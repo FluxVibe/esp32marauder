@@ -47,6 +47,8 @@ void Settings::_buildCache() {
       _cache.GPSTimeSyncPeriod = json["Settings"][i]["value"].as<int>();
     else if (name == "TOTPSecret")
       _cache.TOTPSecret = json["Settings"][i]["value"].as<String>();
+    else if (name == "EncryptPCAP")
+      _cache.EncryptPCAP = json["Settings"][i]["value"].as<bool>();
   }
 }
 
@@ -165,6 +167,8 @@ template <> bool Settings::loadSetting<bool>(String key) {
     return _cache.UILandscape;
   if (key == "GPSTimeSync")
     return _cache.GPSTimeSync;
+  if (key == "EncryptPCAP")
+    return _cache.EncryptPCAP;
 
   // Unknown bool key: fall back to JSON so the setting can be auto-created.
   DynamicJsonDocument json(JSON_SETTING_SIZE);
@@ -256,6 +260,8 @@ template <> bool Settings::saveSetting<bool>(String key, bool value) {
         _cache.UILandscape = value;
       else if (key == "GPSTimeSync")
         _cache.GPSTimeSync = value;
+      else if (key == "EncryptPCAP")
+        _cache.EncryptPCAP = value;
 
       this->printJsonSettings(settings_string);
 
@@ -491,6 +497,12 @@ bool Settings::createDefaultSettings(fs::FS &fs, bool spec, uint8_t index, Strin
     jsonBuffer["Settings"][15]["value"] = "";
     jsonBuffer["Settings"][15]["range"]["min"] = "";
     jsonBuffer["Settings"][15]["range"]["max"] = "";
+
+    jsonBuffer["Settings"][16]["name"]  = "EncryptPCAP";
+    jsonBuffer["Settings"][16]["type"]  = "bool";
+    jsonBuffer["Settings"][16]["value"] = false;
+    jsonBuffer["Settings"][16]["range"]["min"] = false;
+    jsonBuffer["Settings"][16]["range"]["max"] = true;
 
     //jsonBuffer.printTo(settingsFile);
     if (serializeJson(jsonBuffer, settingsFile) == 0) {

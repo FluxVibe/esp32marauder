@@ -42,6 +42,7 @@ class Settings {
       bool GPSTimeSync   = true;
       int GPSTimeSyncPeriod = 300;
       String TOTPSecret  = "";
+      bool EncryptPCAP   = false;
     } _cache;
 
     void _buildCache();  // parse json_settings_string -> _cache

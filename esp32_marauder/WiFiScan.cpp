@@ -2903,6 +2903,33 @@ String WiFiScan::security_int_to_string(int security_type) {
 }
 
 void WiFiScan::startPcap(String file_name) {
+  // Reset any leftover encryption state from a previous capture
+  buffer_obj.disableEncryption();
+
+  // Encrypt captured PCAP when both EncryptPCAP and PINEnabled are active
+  if (settings_obj.loadSetting<bool>("EncryptPCAP") &&
+      settings_obj.loadSetting<bool>("PINEnabled")) {
+
+    // Key = first 16 bytes of SHA-256(PINCode + "AA:BB:CC:DD:EE:FF")
+    String pin    = settings_obj.loadSetting<String>("PINCode");
+    String mac_str = WiFi.macAddress();
+    String input   = pin + mac_str;
+
+    uint8_t hash[32];
+    mbedtls_sha256_context sha_ctx;
+    mbedtls_sha256_init(&sha_ctx);
+    mbedtls_sha256_starts(&sha_ctx, 0); // 0 = SHA-256
+    mbedtls_sha256_update(&sha_ctx,
+                          (const uint8_t*)input.c_str(), input.length());
+    mbedtls_sha256_finish(&sha_ctx, hash);
+    mbedtls_sha256_free(&sha_ctx);
+
+    uint8_t iv[16];
+    esp_fill_random(iv, 16);
+
+    buffer_obj.enableEncryption(hash, iv); // hash[0..15] used as AES-128 key
+  }
+
   buffer_obj.pcapOpen(
     file_name,
     #if defined(HAS_SD)

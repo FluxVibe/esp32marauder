@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "esp_wifi_types.h"
 #include "configs.h"
+#include "mbedtls/aes.h"
 
 //#define BUF_SIZE 3 * 1024 // Had to reduce buffer size to save RAM. GG @spacehuhn
 //#define SNAP_LEN 2324 // max len of each recieved packet
@@ -26,6 +27,10 @@ class Buffer {
     void append(String log);
     void save();
     String getFileName();
+    // AES-128-CTR PCAP encryption.
+    // Call enableEncryption() before pcapOpen(); call disableEncryption() when done.
+    void enableEncryption(const uint8_t* key16, const uint8_t* iv16);
+    void disableEncryption();
   private:
     void createFile(String name, bool is_pcap, bool is_gpx = false);
     void open(bool is_pcap);
@@ -37,7 +42,7 @@ class Buffer {
     void write(const uint8_t* buf, uint32_t len);
     void saveFs();
     void saveSerial();
-    
+
     uint8_t* bufA;
     uint8_t* bufB;
 
@@ -52,6 +57,13 @@ class Buffer {
     File file;
     fs::FS* fs;
     bool serial;
+
+    // AES-128-CTR state
+    bool              _enc_enabled = false;
+    mbedtls_aes_context _enc_ctx;
+    uint8_t           _enc_nonce[16];   // CTR counter (modified in-place by mbedtls)
+    uint8_t           _enc_stream[16];  // cached keystream block
+    size_t            _enc_nc_off;      // byte offset within current keystream block
 };
 
 #endif

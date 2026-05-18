@@ -18,6 +18,7 @@ const SettingsScreen::SettingItem SettingsScreen::ITEMS[] = {
     { "BLE 출력",  "BTTxPower",    false, true  },  // cycle: Low→Medium→High
     { "ForcePMKID","ForcePMKID",   false, false },
     { "SavePCAP",  "SavePCAP",     false, false },
+    { "EncryptPCAP","EncryptPCAP", false, false },
     { "EnableLED", "EnableLED",    false, false },
     { "ChanHop",   "ChanHop",      false, false },
     { "ForceProbe","ForceProbe",   false, false },
