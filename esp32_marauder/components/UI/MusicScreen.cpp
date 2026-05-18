@@ -23,10 +23,16 @@ MusicScreen::MusicScreen(TFT_eSPI& tft)
 // ----------------------------------------------------------------
 
 void MusicScreen::handleUp() {
+    if (_showOverlay) {
+        if      (_overlayFocus == 0) music_player_obj.setVolume(music_player_obj.getVolume() + 5);
+        else if (_overlayFocus == 1) music_player_obj.setBassGain(music_player_obj.getBassDB() + 3);
+        else                         music_player_obj.setTrebleGain(music_player_obj.getTrebleDB() + 3);
+        ui_manager_obj.markDirty();
+        return;
+    }
     if (_view == MV_FILES) {
         if (_cursor > 0) {
             _cursor--;
-            // Adjust scroll for file rows (cursor>0 means a file is selected)
             if (_cursor > 0) {
                 int fileRow = _cursor - 1;
                 if (fileRow < _scrollTop) _scrollTop = fileRow;
@@ -43,6 +49,13 @@ void MusicScreen::handleUp() {
 }
 
 void MusicScreen::handleDown() {
+    if (_showOverlay) {
+        if      (_overlayFocus == 0) music_player_obj.setVolume(music_player_obj.getVolume() - 5);
+        else if (_overlayFocus == 1) music_player_obj.setBassGain(music_player_obj.getBassDB() - 3);
+        else                         music_player_obj.setTrebleGain(music_player_obj.getTrebleDB() - 3);
+        ui_manager_obj.markDirty();
+        return;
+    }
     if (_view == MV_FILES) {
         int n = music_player_obj.getFileCount();
         if (_cursor <= n) {  // 0=BT, 1..n=files
@@ -70,6 +83,11 @@ void MusicScreen::handleDown() {
 // ----------------------------------------------------------------
 
 void MusicScreen::onAction() {
+    if (_showOverlay) {
+        _overlayFocus = (_overlayFocus + 1) % 3;
+        ui_manager_obj.markDirty();
+        return;
+    }
     if (_view == MV_FILES) {
         if (_cursor == 0) {
             switchToDevices();
@@ -98,6 +116,10 @@ void MusicScreen::onAction() {
 }
 
 void MusicScreen::onBack() {
+    if (_showOverlay) {
+        toggleVolumeOverlay();  // close overlay, keep playing
+        return;
+    }
     if (_view == MV_DEVICES) {
         _view = MV_FILES;
         ui_manager_obj.markDirty();
@@ -107,6 +129,84 @@ void MusicScreen::onBack() {
     } else {
         ui_manager_obj.showMenu();
     }
+}
+
+// ----------------------------------------------------------------
+// Volume/EQ overlay
+// ----------------------------------------------------------------
+
+void MusicScreen::toggleVolumeOverlay() {
+    if (_view != MV_PLAYING) return;
+    _showOverlay = !_showOverlay;
+    if (!_showOverlay) {
+        music_player_obj.saveAudioSettings();
+    }
+    _overlayFocus = 0;
+    ui_manager_obj.markDirty();
+}
+
+void MusicScreen::drawOverlay() {
+    const int oy = CLI_FOOTER_Y - OVL_H;  // overlay top y
+    const int ROW = 15;
+
+    // Background + border
+    _tft.fillRect(0, oy, CLI_W, OVL_H, CREAM_BG);
+    _tft.drawRect(0, oy, CLI_W, OVL_H, GOLD_BORDER);
+
+    int vol   = music_player_obj.getVolume();
+    int bass  = music_player_obj.getBassDB();
+    int trebl = music_player_obj.getTrebleDB();
+
+    // Build vol bar: 7 chars, filled = vol*7/100
+    char volBar[10];
+    int vf = vol * 7 / 100;
+    volBar[0] = '[';
+    for (int i = 0; i < 7; i++) volBar[i+1] = (i < vf) ? '=' : '.';
+    volBar[8] = ']'; volBar[9] = '\0';
+
+    // Build EQ bar: 7 chars, pos = (dB+9)/3 (0-6)
+    auto makeEqBar = [](int db, char* out) {
+        int pos = (db + 9) / 3;
+        if (pos < 0) pos = 0;
+        if (pos > 6) pos = 6;
+        out[0] = '[';
+        for (int i = 0; i < 7; i++) out[i+1] = (i == pos) ? '=' : '.';
+        out[8] = ']'; out[9] = '\0';
+    };
+    char bassBar[10], trebBar[10];
+    makeEqBar(bass,  bassBar);
+    makeEqBar(trebl, trebBar);
+
+    // Draw 3 rows
+    struct { const char* label; const char* bar; int val; const char* unit; } rows[3] = {
+        { "Vol", volBar,  vol,   "%" },
+        { "Bas", bassBar, bass,  "dB"},
+        { "Trb", trebBar, trebl, "dB"},
+    };
+
+    _tft.setTextFont(FONT_CLI_BODY);
+    for (int i = 0; i < 3; i++) {
+        int ry = oy + 2 + i * ROW;
+        bool focused = (i == _overlayFocus);
+        uint16_t bg = focused ? GOLD_BORDER : CREAM_BG;
+        uint16_t fg = focused ? GOLD_PRIMARY : MEDIUM_GRAY;
+
+        _tft.fillRect(1, ry, CLI_W - 2, ROW - 1, bg);
+        _tft.setTextColor(fg, bg);
+
+        char line[28];
+        snprintf(line, sizeof(line), "%s%s%+d%s",
+                 rows[i].label, rows[i].bar, rows[i].val, rows[i].unit);
+        _tft.setCursor(3, ry + 2);
+        _tft.print(line);
+    }
+
+    // Hint at bottom of overlay
+    int hy = oy + OVL_H - 10;
+    _tft.fillRect(1, hy, CLI_W - 2, 9, CREAM_BG);
+    _tft.setTextColor(MEDIUM_GRAY, CREAM_BG);
+    _tft.setCursor(3, hy);
+    _tft.print("C:Next HoldC:Close");
 }
 
 // ----------------------------------------------------------------
@@ -121,6 +221,7 @@ void MusicScreen::switchToPlaying() {
 }
 
 void MusicScreen::switchToFiles() {
+    _showOverlay = false;
     _view = MV_FILES;
     music_player_obj.loadFileList();
     ui_manager_obj.markDirty();
@@ -174,6 +275,8 @@ void MusicScreen::draw() {
     if      (_view == MV_FILES)   drawFiles();
     else if (_view == MV_DEVICES) drawDevices();
     else                          drawPlaying();
+
+    if (_showOverlay && _view == MV_PLAYING) drawOverlay();
 }
 
 // ----------------------------------------------------------------
@@ -350,8 +453,9 @@ void MusicScreen::drawPlaying() {
     _tft.setCursor((CLI_W - pw) / 2, y);
     _tft.print(pctBuf);
 
-    drawFooter((s == MS_PAUSED) ? "U:Prev C:Resume D:Nxt"
-                                : "U:Prev C:Pause D:Nxt");
+    drawFooter(_showOverlay ? "C:Next HoldC:Close"
+               : (s == MS_PAUSED) ? "U:Prv C:Resume D:Nxt"
+                                  : "U:Prv C:Pause  D:Nxt");
 }
 
 void MusicScreen::drawProgressBar(int y, int pct) {

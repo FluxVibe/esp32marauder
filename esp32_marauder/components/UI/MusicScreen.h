@@ -15,6 +15,7 @@ enum MusicView { MV_FILES, MV_DEVICES, MV_PLAYING };
 //   Scans for nearby A2DP sinks; user selects one.
 //
 // MV_PLAYING: U=Prev  C=Pause/Resume  D=Next  Back=Stop+Files
+//   C long-press → Volume/EQ overlay: U/D adjust, C cycle focus, hold C close
 class MusicScreen : public CLIScreen {
 public:
     explicit MusicScreen(TFT_eSPI& tft);
@@ -26,6 +27,7 @@ public:
 
     void handleUp();
     void handleDown();
+    void toggleVolumeOverlay();  // called by UIManager on C long-press
 
 private:
     MusicView _view;
@@ -48,7 +50,14 @@ private:
     static const int VISIBLE_ROWS = (CLI_FOOTER_Y - CLI_BODY_START) / ROW_H;
     // File rows below the fixed BT row
     static const int FILE_ROWS    = VISIBLE_ROWS - 1;
+    // Volume/EQ overlay height (3 rows + border)
+    static const int OVL_H        = 49;
 
+    // Volume/EQ overlay (shown over MV_PLAYING)
+    bool _showOverlay  = false;
+    int  _overlayFocus = 0;   // 0=Volume  1=Bass  2=Treble
+
+    void drawOverlay();
     void drawFiles();
     void drawDevices();
     void drawPlaying();

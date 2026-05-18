@@ -501,7 +501,8 @@ void loop()
         // --- Hybrid UI: button routing + render ---
         #ifdef HAS_BUTTONS
           #if (C_BTN >= 0)
-            if (c_btn.justPressed()) ui_manager_obj.handleCenter();
+            if (c_btn.isHeld())           ui_manager_obj.handleCenterHold();
+            else if (c_btn.justPressed()) ui_manager_obj.handleCenter();
           #endif
           #if (D_BTN >= 0)
             if (d_btn.isHeld())       ui_manager_obj.handleBack();

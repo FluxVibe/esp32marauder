@@ -37,6 +37,7 @@ public:
     void handleUp();
     void handleDown();
     void handleCenter();
+    void handleCenterHold();  // C long-press: volume/EQ overlay in MusicScreen
     void handleBack();
 
     // Mode transitions

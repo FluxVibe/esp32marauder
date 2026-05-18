@@ -22,8 +22,14 @@ void MusicPlayer::init() {
     prefs.begin("music", true);
     _savedDeviceName = prefs.getString("bt_name", "");
     prefs.getBytes("bt_addr", _savedAddr, 6);
+    _volumePct  = prefs.getInt("volume", 30);
+    _bassDB     = prefs.getInt("bass",   0);
+    _trebleDB   = prefs.getInt("treble", 0);
     prefs.end();
     _hasSavedDevice = (_savedDeviceName.length() > 0);
+
+    _bfBassL.setLowShelf(_bassDB);    _bfBassR.setLowShelf(_bassDB);
+    _bfTrebL.setHighShelf(_trebleDB); _bfTrebR.setHighShelf(_trebleDB);
 }
 
 // ----------------------------------------------------------------
@@ -265,6 +271,7 @@ void MusicPlayer::update() {
             // reconnected to saved device — no need to re-save
         }
 
+        setVolume(_volumePct);  // apply volume once A2DP is active
         openFile(_fileIndex);
         _state = MS_PLAYING;
     }
@@ -272,6 +279,36 @@ void MusicPlayer::update() {
     if (_state == MS_PLAYING) {
         fillBuffer();
     }
+}
+
+// ----------------------------------------------------------------
+// Volume + EQ control
+// ----------------------------------------------------------------
+
+void MusicPlayer::setVolume(int pct) {
+    _volumePct = constrain(pct, 0, 100);
+    _a2dp.set_volume(_volumePct * 127 / 100);
+}
+
+void MusicPlayer::setBassGain(int db) {
+    _bassDB = constrain(db, -9, 9);
+    _bfBassL.setLowShelf(_bassDB);
+    _bfBassR.setLowShelf(_bassDB);
+}
+
+void MusicPlayer::setTrebleGain(int db) {
+    _trebleDB = constrain(db, -9, 9);
+    _bfTrebL.setHighShelf(_trebleDB);
+    _bfTrebR.setHighShelf(_trebleDB);
+}
+
+void MusicPlayer::saveAudioSettings() {
+    Preferences prefs;
+    prefs.begin("music", false);
+    prefs.putInt("volume",  _volumePct);
+    prefs.putInt("bass",    _bassDB);
+    prefs.putInt("treble",  _trebleDB);
+    prefs.end();
 }
 
 void MusicPlayer::_saveDevice(int idx) {
@@ -314,7 +351,8 @@ void MusicPlayer::openFile(int idx) {
     } else {
 #ifdef AUDIO_MP3
         if (_mp3Dec) delete _mp3Dec;
-        _mp3Sink.buf = &_streamBuf;
+        _mp3Sink.buf   = &_streamBuf;
+        _mp3Sink.owner = this;
         _mp3Dec = new MP3DecoderHelix(_mp3Sink);
         _mp3Dec->begin();
 #endif
@@ -336,6 +374,14 @@ void MusicPlayer::fillWav() {
     size_t n = _file.read(buf, toRead);
     if (n > 0) {
         _readBytes += n;
+        if (_bassDB != 0 || _trebleDB != 0) {
+            int16_t* s = (int16_t*)buf;
+            size_t frames = n / 4;  // stereo 16-bit = 4 bytes/frame
+            for (size_t i = 0; i < frames; i++) {
+                s[i*2]   = _bfTrebL.process(_bfBassL.process(s[i*2]));
+                s[i*2+1] = _bfTrebR.process(_bfBassR.process(s[i*2+1]));
+            }
+        }
         xStreamBufferSend(_streamBuf, buf, n, 0);
     }
     if (n == 0 || !_file.available()) advanceToNext();

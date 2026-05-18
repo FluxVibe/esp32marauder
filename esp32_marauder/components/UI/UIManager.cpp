@@ -260,6 +260,15 @@ void UIManager::handleCenter() {
     }
 }
 
+void UIManager::handleCenterHold() {
+#ifdef HAS_AUDIO
+    if (_screen == _musicScreen) {
+        _musicScreen->toggleVolumeOverlay();
+        return;
+    }
+#endif
+}
+
 void UIManager::handleBack() {
     if (_mode == UI_CLI) {
         if (_screen) _screen->onBack();
