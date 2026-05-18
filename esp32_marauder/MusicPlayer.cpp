@@ -88,13 +88,15 @@ void MusicPlayer::_startBT(bool useSaved) {
     delay(100);
 
     _a2dp.set_ssid_callback(ssid_filter);
+    _a2dp.set_data_callback_in_frames(MusicPlayer::a2dp_cb);
 
     if (useSaved) {
-        _a2dp.set_auto_reconnect(true);
-        _a2dp.start_raw(_savedAddr, MusicPlayer::a2dp_cb);
+        // v1.8.6+: start_raw(addr) removed — use set_auto_reconnect(addr) + start()
+        _a2dp.set_auto_reconnect(_savedAddr, 3);
+        _a2dp.start("Marauder");
     } else {
         _a2dp.set_auto_reconnect(false);
-        _a2dp.start("Marauder", MusicPlayer::a2dp_cb);
+        _a2dp.start("Marauder");
     }
 }
 
@@ -137,14 +139,15 @@ void MusicPlayer::startDeviceScan() {
 
     _a2dp.set_auto_reconnect(false);
     _a2dp.set_ssid_callback(ssid_filter);
-    _a2dp.start("Marauder", MusicPlayer::a2dp_cb);
+    _a2dp.set_data_callback_in_frames(MusicPlayer::a2dp_cb);
+    _a2dp.start("Marauder");
 }
 
 void MusicPlayer::connectTo(int index) {
     if (index < 0 || index >= _discoverCount) return;
     _targetIdx = index;
 
-    // Restart with the specific device; ssid_filter returns true for _targetIdx
+    // Restart targeting selected device by MAC address
     _a2dp.end();
     if (btStarted()) btStop();
     delay(100);
@@ -152,9 +155,11 @@ void MusicPlayer::connectTo(int index) {
     _scanning = false;  // done scanning, now connecting
     _state    = MS_CONNECTING;
 
-    _a2dp.set_auto_reconnect(true);
+    // v1.8.6+: set_auto_reconnect(addr) replaces start_raw(addr, cb)
+    _a2dp.set_auto_reconnect(_discovered[index].addr, 3);
     _a2dp.set_ssid_callback(ssid_filter);
-    _a2dp.start("Marauder", MusicPlayer::a2dp_cb);
+    _a2dp.set_data_callback_in_frames(MusicPlayer::a2dp_cb);
+    _a2dp.start("Marauder");
 }
 
 void MusicPlayer::exitMusicMode() {
